@@ -96,22 +96,25 @@ export default function App() {
     return (
       <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] text-center">
         <div className="max-w-xl w-full bg-white border-4 border-black p-12 shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]">
-          <div className="inline-flex p-4 bg-amber-400 border-2 border-black mb-8">
-            <Settings size={48} />
+          <div className="inline-flex p-4 bg-red-500 border-2 border-black mb-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <AlertTriangle size={48} className="text-white" />
           </div>
           <h1 className="text-4xl font-black uppercase tracking-tighter italic mb-6">
-            Configuração <span className="text-amber-500 underline">Pendente</span>
+            Erro: <span className="text-red-600 underline">Ambiente Vercel</span>
           </h1>
-          <div className="space-y-4 text-left font-medium text-zinc-600 mb-8 border-l-4 border-amber-500 pl-6">
-            <p>Para o sistema funcionar, o projeto Supabase deve estar conectado. Se você estiver vendo isto após o deploy:</p>
+          <div className="space-y-4 text-left font-medium text-zinc-600 mb-8 border-l-4 border-red-500 pl-6">
+            <p className="font-bold text-red-600">As chaves de API do Supabase não foram encontradas.</p>
+            <p>Para corrigir este erro no seu deploy:</p>
             <ol className="list-decimal list-inside space-y-2 text-sm italic font-bold">
-              <li>Verifique se as variáveis de ambiente foram configuradas no seu serviço de hospedagem (ex: Vercel Dashboard).</li>
-              <li>Certifique-se de que as chaves estão exatamente como solicitado:</li>
+              <li>Acesse o painel da <span className="bg-zinc-100 px-1 border border-black text-xs">Vercel</span>.</li>
+              <li>Vá em <span className="bg-zinc-100 px-1 border border-black text-xs">Settings &gt; Environment Variables</span>.</li>
+              <li>Adicione estas duas chaves EXATAMENTE assim:</li>
             </ol>
-            <div className="bg-zinc-900 text-zinc-300 p-4 font-mono text-[10px] space-y-2 mt-4 border-2 border-black">
-              <p className="text-lime-400 font-bold">VITE_SUPABASE_URL="https://seu-projeto.supabase.co"</p>
-              <p className="text-lime-400 font-bold">VITE_SUPABASE_ANON_KEY="sua-chave-anon"</p>
+            <div className="bg-zinc-900 text-zinc-300 p-4 font-mono text-[11px] space-y-2 mt-4 border-2 border-black">
+              <p className="text-lime-400 font-bold select-all">VITE_SUPABASE_URL</p>
+              <p className="text-lime-400 font-bold select-all">VITE_SUPABASE_ANON_KEY</p>
             </div>
+            <p className="text-xs mt-4">Após adicionar, você precisa fazer um <span className="underline">Redeploy</span> para as mudanças surtirem efeito.</p>
           </div>
           <p className="text-xs text-zinc-400 font-bold uppercase mb-8">Após adicionar, reinicie o servidor ou aguarde a atualização.</p>
           <div className="p-4 bg-amber-50 border-2 border-amber-200 text-amber-700 flex items-start text-xs text-left">
