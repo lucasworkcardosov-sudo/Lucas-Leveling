@@ -1,45 +1,50 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Uso estrito de import.meta.env com tratamento para espaços em branco (trim)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+// Captura direta com tratamento rígido de strings
+const rawUrl = import.meta.env.VITE_SUPABASE_URL;
+const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Log de debug para ambiente de produção para verificar valores (com máscara para segurança)
+const supabaseUrl = String(rawUrl || '').trim();
+const supabaseAnonKey = String(rawKey || '').trim();
+
+// Log de depuração (debug) solicitado
 if (typeof window !== 'undefined') {
-  console.log("Supabase URL carregada:", supabaseUrl || "AUSENTE");
-  if (supabaseAnonKey) {
-    console.log("Supabase Anon Key detectada (Início):", supabaseAnonKey.substring(0, 10) + "...");
-  } else {
-    console.warn("Supabase Anon Key: AUSENTE ou VAZIA");
+  console.log("Conectando ao Supabase em:", supabaseUrl || "URL_VAZIA");
+  if (!supabaseUrl || supabaseUrl === 'undefined' || supabaseUrl.includes('seu-projeto')) {
+    console.warn("DICA: Verifique VITE_SUPABASE_URL nas variáveis da Vercel.");
   }
 }
 
+// Validação rigorosa
 export const isSupabaseConfigured = 
-  !!supabaseUrl && 
+  supabaseUrl.length > 0 && 
   supabaseUrl !== 'undefined' && 
   supabaseUrl.startsWith('https://') &&
-  !!supabaseAnonKey &&
+  !supabaseUrl.includes('seu-projeto') &&
+  supabaseAnonKey.length > 20 &&
   supabaseAnonKey !== 'undefined' &&
-  supabaseAnonKey.length > 20;
+  !supabaseAnonKey.includes('sua-chave');
 
-// Inicialização segura
-let supabaseInstance;
+// Inicialização defensiva: Só chama createClient se as chaves forem válidas
+let _supabaseInstance: SupabaseClient | null = null;
 
 if (isSupabaseConfigured) {
   try {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
-    console.log("✓ Cliente Supabase iniciado com sucesso.");
-  } catch (error) {
-    console.error("CRITICAL: Erro ao chamar createClient do Supabase:", error);
-    supabaseInstance = null as any;
+    _supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+  } catch (err) {
+    console.error("Erro ao inicializar createClient:", err);
   }
 } else {
-  // Mock para evitar erros de referência no carregamento inicial
-  // O App.tsx lidará com a exibição da tela de erro
-  supabaseInstance = createClient(
-    'https://placeholder-project.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy'
-  );
+  console.warn("Aguardando chaves de API... (Supabase não inicializado)");
 }
 
-export const supabase = supabaseInstance;
+// Exportamos o cliente. Se não configurado, será null.
+// Nota: O App.tsx deve lidar com o caso de ser null.
+export const supabase = _supabaseInstance as SupabaseClient;
+
+export const getSupabase = (): SupabaseClient => {
+  if (!_supabaseInstance) {
+    throw new Error('Aguardando variáveis de ambiente (Supabase client is null)');
+  }
+  return _supabaseInstance;
+};

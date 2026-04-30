@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { supabase, isSupabaseConfigured, getSupabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Profile } from './types';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -25,7 +25,9 @@ export default function App() {
         return;
       }
 
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      const client = getSupabase();
+
+      client.auth.getSession().then(({ data: { session } }) => {
         setSession(session);
         if (session) fetchProfile(session.user.id);
         else setLoading(false);
@@ -35,7 +37,7 @@ export default function App() {
         setLoading(false);
       });
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
         setSession(session);
         if (session) fetchProfile(session.user.id);
         else {
