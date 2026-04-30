@@ -58,14 +58,14 @@ export const LoginPage = () => {
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/update-password`,
       });
 
       if (resetError) throw resetError;
@@ -162,7 +162,7 @@ export const LoginPage = () => {
                 exit={{ opacity: 0 }}
               >
                 {!resetSent ? (
-                  <form onSubmit={handleResetPassword} className="space-y-6">
+                  <form onSubmit={handlePasswordReset} className="space-y-6">
                     <p className="text-zinc-400 text-sm font-medium">
                       Insira seu e-mail para enviarmos um link de redefinição de senha.
                     </p>

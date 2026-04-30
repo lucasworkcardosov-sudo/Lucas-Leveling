@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input';
 import { Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
-export const ResetPasswordPage = () => {
+export const UpdatePasswordPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,8 @@ export const ResetPasswordPage = () => {
 
       if (updateError) throw updateError;
       setSuccess(true);
-      setTimeout(() => navigate('/login'), 3000);
+      // Redireciona para o dashboard após sucesso
+      setTimeout(() => navigate('/dashboard'), 2000);
     } catch (err: any) {
       setError(err.message || 'Erro ao atualizar senha.');
     } finally {

@@ -8,36 +8,48 @@ import { RegisterPage } from './pages/RegisterPage';
 import { Dashboard } from './pages/Dashboard';
 import { PendingPage } from './pages/PendingPage';
 import { AdminPage } from './pages/AdminPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
+import { Button } from './components/ui/Button';
 import { Settings, AlertTriangle } from 'lucide-react';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else {
-        setProfile(null);
+    try {
+      if (!isSupabaseConfigured) {
         setLoading(false);
+        return;
       }
-    });
 
-    return () => subscription.unsubscribe();
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        if (session) fetchProfile(session.user.id);
+        else setLoading(false);
+      }).catch(err => {
+        console.error('Session fetch error:', err);
+        setInitError('Erro ao conectar com o servidor de autenticação.');
+        setLoading(false);
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+        if (session) fetchProfile(session.user.id);
+        else {
+          setProfile(null);
+          setLoading(false);
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    } catch (error: any) {
+      console.error('App init error:', error);
+      setInitError(error.message || 'Falha crítica na inicialização.');
+      setLoading(false);
+    }
   }, []);
 
   const fetchProfile = async (userId: string) => {
@@ -56,6 +68,21 @@ export default function App() {
       setLoading(false);
     }
   };
+
+  if (initError) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(239,68,68,1)]">
+          <AlertTriangle className="mx-auto text-red-500 mb-4" size={48} />
+          <h2 className="text-2xl font-black uppercase tracking-tighter mb-4 italic text-red-600">Erro de Inicialização</h2>
+          <p className="font-medium text-zinc-600 mb-6">{initError}</p>
+          <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+            Tentar Novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -76,11 +103,10 @@ export default function App() {
             Configuração <span className="text-amber-500 underline">Pendente</span>
           </h1>
           <div className="space-y-4 text-left font-medium text-zinc-600 mb-8 border-l-4 border-amber-500 pl-6">
-            <p>Para o sistema funcionar, você precisa conectar seu projeto Supabase:</p>
+            <p>Para o sistema funcionar, o projeto Supabase deve estar conectado. Se você estiver vendo isto após o deploy:</p>
             <ol className="list-decimal list-inside space-y-2 text-sm italic font-bold">
-              <li>Acesse o menu <span className="bg-zinc-100 px-1 border border-black">Settings (Engrenagem)</span> no AI Studio.</li>
-              <li>Vá em <span className="bg-zinc-100 px-1 border border-black">Secrets</span>.</li>
-              <li>Adicione as chaves:</li>
+              <li>Verifique se as variáveis de ambiente foram configuradas no seu serviço de hospedagem (ex: Vercel Dashboard).</li>
+              <li>Certifique-se de que as chaves estão exatamente como solicitado:</li>
             </ol>
             <div className="bg-zinc-900 text-zinc-300 p-4 font-mono text-[10px] space-y-2 mt-4 border-2 border-black">
               <p className="text-lime-400 font-bold">VITE_SUPABASE_URL="https://seu-projeto.supabase.co"</p>
@@ -102,7 +128,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={!session ? <LoginPage /> : <AuthRedirect session={session} profile={profile} />} />
         <Route path="/register" element={!session ? <RegisterPage /> : <AuthRedirect session={session} profile={profile} />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
         
         <Route path="/dashboard" element={
           <ProtectedRoute session={session} profile={profile} requiredStatus="approved">
