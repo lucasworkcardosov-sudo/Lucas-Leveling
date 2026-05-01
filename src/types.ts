@@ -1,17 +1,22 @@
-export type UserStatus = 'pending' | 'approved' | 'rejected';
-export type UserRole = 'student' | 'admin';
+export type UserRole = 'aluno' | 'admin';
 
 export interface Profile {
   id: string;
   full_name: string;
+  nickname?: string;
   email: string;
   height?: number;
   weight?: number;
+  age?: number;
   goal?: string;
   available_time?: number;
   training_period?: string;
-  status: UserStatus;
+  training_time?: string;
+  training_days_per_week?: number;
+  accepted_terms?: boolean;
+  terms_accepted_at?: string;
   role: UserRole;
+  gender?: string;
   xp: number;
   level: number;
   created_at: string;
@@ -31,6 +36,8 @@ export interface Workout {
   student_id: string;
   name: string;
   description?: string;
+  division?: string;
+  exercises?: any[]; // For JSONB storage
   created_at: string;
 }
 

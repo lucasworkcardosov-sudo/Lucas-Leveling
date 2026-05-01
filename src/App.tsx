@@ -6,12 +6,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { Dashboard } from './pages/Dashboard';
-import { PendingPage } from './pages/PendingPage';
 import { AdminPage } from './pages/AdminPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
 import { WorkoutPage } from './pages/WorkoutPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { ExerciseDetail } from './pages/ExerciseDetail';
+import { ProfilePage } from './pages/ProfilePage';
 import { Button } from './components/ui/Button';
 import { Settings, AlertTriangle } from 'lucide-react';
 
@@ -22,6 +22,7 @@ export default function App() {
   const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     try {
       if (!isSupabaseConfigured) {
         setLoading(false);
@@ -30,26 +31,42 @@ export default function App() {
 
       const client = getSupabase();
 
+      // Get initial session
       client.auth.getSession().then(({ data: { session } }) => {
+        if (!mounted) return;
         setSession(session);
-        if (session) fetchProfile(session.user.id);
-        else setLoading(false);
+        if (session) {
+          fetchProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
       }).catch(err => {
+        if (!mounted) return;
         console.error('Session fetch error:', err);
         setInitError('Erro ao conectar com o servidor de autenticação.');
         setLoading(false);
       });
 
-      const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-        if (session) fetchProfile(session.user.id);
-        else {
+      // Listen for auth changes
+      const { data: { subscription } } = client.auth.onAuthStateChange((event, newSession) => {
+        if (!mounted) return;
+        
+        if (event === 'SIGNED_IN') {
+          setSession(newSession);
+          if (newSession) fetchProfile(newSession.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
           setProfile(null);
           setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED') {
+          setSession(newSession);
         }
       });
 
-      return () => subscription.unsubscribe();
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+      };
     } catch (error: any) {
       console.error('App init error:', error);
       setInitError(error.message || 'Falha crítica na inicialização.');
@@ -159,35 +176,35 @@ export default function App() {
         <Route path="/update-password" element={<UpdatePasswordPage />} />
         
         <Route path="/dashboard" element={
-          <ProtectedRoute session={session} profile={profile} requiredStatus="approved">
+          <ProtectedRoute session={session} profile={profile}>
             <Dashboard profile={profile!} onRefresh={() => fetchProfile(session!.user.id)} />
           </ProtectedRoute>
         } />
 
         <Route path="/workout" element={
-          <ProtectedRoute session={session} profile={profile} requiredStatus="approved">
+          <ProtectedRoute session={session} profile={profile}>
             <WorkoutPage profile={profile!} />
           </ProtectedRoute>
         } />
 
         <Route path="/progress" element={
-          <ProtectedRoute session={session} profile={profile} requiredStatus="approved">
+          <ProtectedRoute session={session} profile={profile}>
             <ProgressPage profile={profile!} />
           </ProtectedRoute>
         } />
 
         <Route path="/exercise/:id" element={
-          <ProtectedRoute session={session} profile={profile} requiredStatus="approved">
-            <ExerciseDetail />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/pending" element={
-          <ProtectedRoute session={session} profile={profile} requiredStatus="pending">
-            <PendingPage />
+          <ProtectedRoute session={session} profile={profile}>
+            <ExerciseDetail profile={profile!} />
           </ProtectedRoute>
         } />
 
+        <Route path="/profile" element={
+          <ProtectedRoute session={session} profile={profile}>
+            <ProfilePage profile={profile!} onRefresh={() => fetchProfile(session!.user.id)} />
+          </ProtectedRoute>
+        } />
+        
         <Route path="/admin" element={
           <ProtectedRoute session={session} profile={profile} requiredRole="admin">
             <AdminPage />
@@ -205,7 +222,6 @@ function AuthRedirect({ session, profile }: { session: Session; profile: Profile
   if (!profile) return <div className="min-h-screen flex items-center justify-center bg-zinc-50"><div className="h-12 w-12 border-4 border-black border-t-lime-400 rounded-full animate-spin" /></div>;
   
   if (profile.role === 'admin') return <Navigate to="/admin" replace />;
-  if (profile.status === 'pending') return <Navigate to="/pending" replace />;
   return <Navigate to="/dashboard" replace />;
 }
 
@@ -214,13 +230,11 @@ function ProtectedRoute({
   children, 
   session, 
   profile, 
-  requiredStatus, 
   requiredRole 
 }: { 
   children: React.ReactNode; 
   session: Session | null; 
   profile: Profile | null;
-  requiredStatus?: string;
   requiredRole?: string;
 }) {
   if (!session) return <Navigate to="/login" replace />;
@@ -230,10 +244,6 @@ function ProtectedRoute({
   if (profile.role === 'admin') return <>{children}</>;
 
   if (requiredRole && profile.role !== requiredRole) return <Navigate to="/login" replace />;
-  if (requiredStatus && profile.status !== requiredStatus) {
-    if (profile.status === 'pending') return <Navigate to="/pending" replace />;
-    return <Navigate to="/login" replace />;
-  }
-
+  
   return <>{children}</>;
 }

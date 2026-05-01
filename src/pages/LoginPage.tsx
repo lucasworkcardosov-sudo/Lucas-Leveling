@@ -35,10 +35,10 @@ export const LoginPage = () => {
         return;
       }
 
-      // Fetch profile to check status
+      // Fetch profile to check role
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('status, role')
+        .select('role')
         .eq('id', data.user.id)
         .single();
 
@@ -46,8 +46,6 @@ export const LoginPage = () => {
 
       if (profile.role === 'admin') {
         navigate('/admin');
-      } else if (profile.status === 'pending') {
-        navigate('/pending');
       } else {
         navigate('/dashboard');
       }

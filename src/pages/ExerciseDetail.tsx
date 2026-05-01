@@ -1,15 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Exercise } from '../types';
+import { Exercise, Profile } from '../types';
 import { ArrowLeft, Play, Info, Dumbbell, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
-export const ExerciseDetail = () => {
+interface ExerciseDetailProps {
+  profile: Profile;
+}
+
+export const ExerciseDetail = ({ profile }: ExerciseDetailProps) => {
   const { id } = useParams<{ id: string }>();
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (profile.role === 'admin') navigate('/admin');
+    else navigate(-1);
+  };
+
+  const displayName = profile.nickname || profile.full_name || profile.email;
+  const initials = (profile.nickname || profile.full_name || profile.email || '?')
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
 
   useEffect(() => {
     fetchExercise();
@@ -44,7 +61,7 @@ export const ExerciseDetail = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-900 p-6 text-center">
         <h1 className="text-4xl font-black uppercase tracking-tighter text-white mb-6 italic">Exercício não encontrado</h1>
-        <Button onClick={() => navigate(-1)} variant="secondary">Voltar</Button>
+        <Button onClick={handleBack} variant="secondary">Voltar</Button>
       </div>
     );
   }
@@ -53,12 +70,22 @@ export const ExerciseDetail = () => {
     <div className="min-h-screen bg-zinc-900 text-white font-sans">
       <header className="border-b-4 border-black bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center space-x-4">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all text-black">
+          <button onClick={handleBack} className="p-2 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all text-black">
             <ArrowLeft size={24} />
           </button>
           <div className="flex items-center space-x-2">
             <Dumbbell className="text-lime-500" strokeWidth={3} />
             <span className="font-black uppercase tracking-tighter text-2xl italic text-black">DETALHE.</span>
+          </div>
+        </div>
+
+        <div className="hidden md:flex items-center space-x-3">
+          <div className="text-right">
+            <p className="text-[10px] font-black uppercase text-zinc-400 leading-none">Perfil</p>
+            <p className="text-xs font-black uppercase text-black truncate max-w-[120px]">{displayName}</p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-zinc-900 border-2 border-black flex items-center justify-center">
+            <span className="text-xs font-black text-white italic">{initials}</span>
           </div>
         </div>
       </header>

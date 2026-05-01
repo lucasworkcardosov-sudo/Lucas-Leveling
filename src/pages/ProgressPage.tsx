@@ -24,6 +24,19 @@ export const ProgressPage = ({ profile }: ProgressPageProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  const handleBack = () => {
+    if (profile.role === 'admin') navigate('/admin');
+    else navigate('/dashboard');
+  };
+
+  const displayName = profile.nickname || profile.full_name || profile.email;
+  const initials = (profile.nickname || profile.full_name || profile.email || '?')
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+
   useEffect(() => {
     fetchHistory();
   }, []);
@@ -36,15 +49,22 @@ export const ProgressPage = ({ profile }: ProgressPageProps) => {
         .eq('student_id', profile.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        // If table doesn't exist, just show empty
+        console.warn('Workout history not found or empty:', error.message);
+        setHistory([]);
+        return;
+      }
 
       // Acumular XP para o gráfico de evolução
-      let totalXp = 0;
+      let totalXp = profile.xp || 0; // Começar com o XP atual do perfil se quiser, mas o gráfico pede histórico
+      let accumulatedXp = 0;
+      
       const chartData = data?.map((item: any) => {
-        totalXp += item.xp_gained;
+        accumulatedXp += item.xp_gained;
         return {
           date: new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-          xp: totalXp,
+          xp: accumulatedXp,
           gained: item.xp_gained
         };
       });
@@ -52,6 +72,7 @@ export const ProgressPage = ({ profile }: ProgressPageProps) => {
       setHistory(chartData || []);
     } catch (error) {
       console.error('Error fetching history:', error);
+      setHistory([]);
     } finally {
       setIsLoading(false);
     }
@@ -61,12 +82,22 @@ export const ProgressPage = ({ profile }: ProgressPageProps) => {
     <div className="min-h-screen bg-zinc-900 text-white font-sans">
       <header className="border-b-4 border-black bg-white px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center space-x-4">
-          <button onClick={() => navigate('/dashboard')} className="p-2 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all text-black">
+          <button onClick={handleBack} className="p-2 hover:bg-zinc-100 border-2 border-transparent hover:border-black transition-all text-black">
             <ArrowLeft size={24} />
           </button>
           <div className="flex items-center space-x-2">
             <TrendingUp className="text-lime-500" strokeWidth={3} />
             <span className="font-black uppercase tracking-tighter text-2xl italic text-black">EVOLUÇÃO.</span>
+          </div>
+        </div>
+
+        <div className="hidden md:flex items-center space-x-3">
+          <div className="text-right">
+            <p className="text-[10px] font-black uppercase text-zinc-400 leading-none">Atleta</p>
+            <p className="text-xs font-black uppercase text-black truncate max-w-[150px]">{displayName}</p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-zinc-900 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <span className="text-xs font-black text-white italic">{initials}</span>
           </div>
         </div>
       </header>
