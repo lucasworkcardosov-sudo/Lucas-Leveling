@@ -388,41 +388,50 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
 
   return (
     <div className="min-h-screen bg-zinc-50 font-sans">
-      <header className="border-b-4 border-black bg-white sticky top-0 z-10 px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Dumbbell className="text-lime-500" strokeWidth={3} />
-          <span className="font-black uppercase tracking-tighter text-2xl italic">LEVELING.</span>
+      <header className="border-b-4 border-black bg-white sticky top-0 z-10 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center gap-2">
+        <div className="flex items-center space-x-2 shrink-0">
+          <Dumbbell className="text-lime-500" strokeWidth={3} size={24} />
+          <span className="font-black uppercase tracking-tighter text-xl md:text-2xl italic">LEVELING.</span>
         </div>
         
-          <div className="hidden md:flex items-center space-x-6">
-             <div className="flex items-center space-x-3 mr-4">
-                <div className="w-8 h-8 rounded-full bg-zinc-900 border-2 border-black flex items-center justify-center overflow-hidden">
-                  <span className="text-[10px] font-black text-white">{initials}</span>
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 truncate max-w-[120px]">
-                  {displayName}
-                </span>
-             </div>
-             {profile.role === 'admin' && (
-             <button 
-               onClick={() => navigate('/admin')}
-               className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-lime-500 border-2 border-zinc-100 hover:border-lime-500 px-3 py-1 transition-all italic"
-             >
-               PAINEL MESTRE
-             </button>
-           )}
-           <div className="flex items-center space-x-2 bg-black text-white px-4 py-1 rounded-full border-2 border-black">
-              <Trophy size={16} className="text-lime-400" />
-              <span className="text-xs font-black uppercase tracking-wider">Level {profile.level}</span>
-              <span className="text-[10px] text-zinc-400">{profile.xp} XP</span>
-           </div>
-           <Button onClick={handleLogout} variant="ghost" className="p-2 h-auto">
-             <LogOut size={20} />
-           </Button>
+        <div className="flex items-center gap-2 md:gap-4 ml-auto">
+          {profile.role === 'admin' && (
+            <button 
+              onClick={() => navigate('/admin')}
+              className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-lime-500 border-2 border-zinc-100 hover:border-lime-500 px-3 py-1 transition-all italic shrink-0"
+            >
+              PAINEL
+            </button>
+          )}
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mr-1">
+              <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-zinc-900 border-2 border-black flex items-center justify-center overflow-hidden shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <span className="text-[10px] font-black text-white">{initials}</span>
+              </div>
+              <span className="hidden lg:block text-[10px] font-black uppercase tracking-widest text-zinc-600 truncate max-w-[100px]">
+                {displayName}
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-1.5 md:space-x-2 bg-black text-white px-2 md:px-4 py-1 rounded-full border-2 border-black shrink-0">
+              <Trophy size={14} className="text-lime-400 font-bold" />
+              <span className="text-[9px] md:text-xs font-black uppercase tracking-wider">L{profile.level}</span>
+              <span className="hidden sm:inline text-[9px] text-zinc-400 font-bold">{profile.xp} XP</span>
+            </div>
+
+            <button 
+              onClick={handleLogout} 
+              className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-black transition-colors hover:bg-zinc-100 rounded-lg"
+              title="Sair"
+            >
+              <LogOut size={20} strokeWidth={3} />
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-[1400px] mx-auto p-6 md:p-10">
+      <main className="w-full max-w-[1400px] mx-auto px-4 md:px-10 py-6 md:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Left */}
           <div className="space-y-6 lg:col-span-1">
@@ -574,11 +583,11 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
           <div className="lg:col-span-3 space-y-6">
              {selectedWorkout ? (
                <div className="space-y-6">
-                 <div className="bg-white border-4 border-black p-6 md:p-8 relative overflow-hidden">
+                 <div className="bg-white border-4 border-black p-4 md:p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 px-4 py-1 bg-black text-lime-400 font-black italic uppercase text-[10px] transform rotate-bg rotate-0">
                        {selectedWorkout.division || 'TREINO ATIVO'}
                     </div>
-                    <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter leading-none mb-2">
+                    <h1 className="text-3xl md:text-6xl font-black uppercase italic tracking-tighter leading-tight mb-2">
                        {selectedWorkout.name}
                     </h1>
                     <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs flex items-center">
@@ -589,22 +598,22 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
                  <div className="space-y-4">
                     {selectedWorkout.exercises?.map((we: any, idx: number) => (
                       <div key={idx} className={cn(
-                        "bg-white border-4 border-black p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 group transition-all shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]",
+                        "bg-white border-4 border-black p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 group transition-all shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]",
                         completedExercises.includes(idx) && "bg-lime-50 border-lime-500 shadow-[8px_8px_0px_0px_rgba(163,230,53,1)]"
                       )}>
                         <div className="flex items-center flex-1">
                           <button 
                             onClick={() => toggleExerciseCompletion(idx)}
                             className={cn(
-                              "w-12 h-12 flex items-center justify-center border-2 border-black italic shrink-0 mr-6 text-xl transition-all",
+                              "w-10 h-10 md:w-12 md:h-12 flex items-center justify-center border-2 border-black italic shrink-0 mr-4 md:mr-6 text-lg md:text-xl transition-all",
                               completedExercises.includes(idx) ? "bg-black text-lime-400" : "bg-zinc-100 text-zinc-400 hover:border-lime-500"
                             )}
                           >
                             {completedExercises.includes(idx) ? <CheckCircle2 size={24} strokeWidth={3} /> : idx + 1}
                           </button>
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <h3 className={cn(
-                              "font-black uppercase tracking-tighter text-2xl leading-none mb-1 transition-colors",
+                              "font-black uppercase tracking-tighter text-xl md:text-2xl leading-tight mb-1 transition-colors truncate",
                               completedExercises.includes(idx) ? "text-zinc-400 line-through" : "group-hover:text-lime-600"
                             )}>
                               {we.name}
@@ -622,34 +631,36 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-4">
-                          <div className="bg-zinc-50 p-3 border-2 border-black min-w-[80px] text-center">
-                            <p className="text-[8px] font-black uppercase text-zinc-400 mb-1">Séries</p>
-                            <p className="text-xl font-black italic">{we.sets || '3'}</p>
+                        <div className="grid grid-cols-3 md:flex md:flex-wrap items-center gap-2 md:gap-4 w-full md:w-auto">
+                          <div className="bg-zinc-50 p-2 md:p-3 border-2 border-black min-w-0 md:min-w-[80px] text-center">
+                            <p className="text-[7px] md:text-[8px] font-black uppercase text-zinc-400 mb-1">Séries</p>
+                            <p className="text-lg md:text-xl font-black italic">{we.sets || '3'}</p>
                           </div>
-                          <div className="bg-zinc-50 p-3 border-2 border-black min-w-[90px] text-center">
-                            <p className="text-[8px] font-black uppercase text-zinc-400 mb-1">Repetições</p>
-                            <p className="text-xl font-black italic">{we.reps || '12'}</p>
+                          <div className="bg-zinc-50 p-2 md:p-3 border-2 border-black min-w-0 md:min-w-[90px] text-center">
+                            <p className="text-[7px] md:text-[8px] font-black uppercase text-zinc-400 mb-1">Reps</p>
+                            <p className="text-lg md:text-xl font-black italic">{we.reps || '12'}</p>
                           </div>
-                          <div className="bg-zinc-50 p-3 border-2 border-black min-w-[80px] text-center">
-                            <p className="text-[8px] font-black uppercase text-zinc-400 mb-1">Carga</p>
-                            <p className="text-xl font-black italic text-lime-600">{we.weight || '--'}</p>
+                          <div className="bg-zinc-50 p-2 md:p-3 border-2 border-black min-w-0 md:min-w-[80px] text-center">
+                            <p className="text-[7px] md:text-[8px] font-black uppercase text-zinc-400 mb-1">Carga</p>
+                            <p className="text-lg md:text-xl font-black italic text-lime-600">{we.weight || '--'}</p>
                           </div>
                           
-                          <div className="flex items-center space-x-2">
+                          <div className="col-span-3 flex items-center space-x-2 mt-2 md:mt-0 md:flex-none">
                              <button 
                                onClick={() => handleOpenReplacement(idx, we.category || we.muscle_group)}
-                               className="p-3 bg-white text-black hover:bg-black hover:text-white transition-all border-2 border-black"
+                               className="flex-1 md:flex-none p-3 md:p-3 bg-white text-black hover:bg-black hover:text-white transition-all border-2 border-black flex items-center justify-center gap-2"
                                title="Trocar Exercício"
                              >
-                               <RefreshCcw size={20} />
+                               <RefreshCcw size={18} />
+                               <span className="md:hidden text-[9px] font-black uppercase tracking-widest">Trocar</span>
                              </button>
                              <button 
                                onClick={() => setActiveVideo({ name: we.name, url: we.video_url || '', instructions: we.instructions || '' })}
-                               className="p-3 bg-black text-white hover:bg-lime-500 hover:text-black transition-all border-2 border-black"
+                               className="flex-1 md:flex-none p-3 md:p-3 bg-black text-white hover:bg-lime-500 hover:text-black transition-all border-2 border-black flex items-center justify-center gap-2"
                                title="Ver Demonstração"
                              >
-                               <PlayCircle size={24} />
+                               <PlayCircle size={22} />
+                               <span className="md:hidden text-[9px] font-black uppercase tracking-widest">Vídeo</span>
                              </button>
                           </div>
                         </div>
@@ -657,25 +668,25 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
                     ))}
                  </div>
 
-                 <div className="pt-10 pb-20">
+                  <div className="pt-6 pb-20 max-w-full overflow-hidden">
                     <button 
                       onClick={handleFinishWorkout}
                       disabled={loading}
                       className={cn(
-                        "w-full py-8 text-black font-black uppercase italic text-4xl tracking-tighter border-4 border-black transition-all shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[6px] hover:translate-y-[6px] disabled:opacity-50 flex items-center justify-center",
-                        loading ? "bg-zinc-200" : "bg-lime-400 hover:bg-lime-500"
+                        "w-full py-5 md:py-8 px-4 md:px-8 text-white font-black uppercase italic text-[clamp(1rem,4vw,1.25rem)] tracking-tighter border-4 border-black transition-all shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] md:hover:translate-x-[6px] hover:translate-y-[4px] md:hover:translate-y-[6px] disabled:opacity-50 flex items-center justify-center text-center",
+                        loading ? "bg-zinc-200" : "bg-lime-400 !text-black hover:bg-lime-500"
                       )}
                     >
                       {loading ? (
-                        <div className="flex items-center">
-                           <Clock className="animate-spin mr-4" size={32} />
-                           FINALIZANDO...
+                        <div className="flex items-center justify-center">
+                           <Clock className="animate-spin mr-3 md:mr-4 shrink-0" size={24} />
+                           <span>FINALIZANDO...</span>
                         </div>
                       ) : (
-                        <>
-                          <CheckCircle2 size={40} className="mr-6" strokeWidth={3} />
-                          FINALIZAR TREINO (+100 XP)
-                        </>
+                        <div className="flex items-center justify-center leading-tight">
+                          <CheckCircle2 size={32} className="mr-2 md:mr-6 shrink-0" strokeWidth={3} />
+                          <span className="block">FINALIZAR TREINO (+100 XP)</span>
+                        </div>
                       )}
                     </button>
                  </div>
@@ -932,15 +943,15 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
                  </button>
               </div>
               
-              <div className="p-1">
+              <div className="p-1 w-full overflow-hidden">
                  {(() => {
                    const embedUrl = getYoutubeEmbedUrl(activeVideo.url);
                    if (embedUrl) {
                      return (
-                       <div className="aspect-video bg-zinc-900 border-4 border-black">
+                       <div className="aspect-video bg-zinc-900 border-4 border-black w-full overflow-hidden">
                          <iframe 
                            src={embedUrl}
-                           className="w-full h-full"
+                           className="w-full h-full object-cover"
                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                            allowFullScreen
                          />
@@ -948,10 +959,10 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
                      );
                    }
                    return (
-                     <div className="aspect-video bg-zinc-100 flex flex-col items-center justify-center text-black p-10 text-center border-4 border-black">
-                        <AlertTriangle size={64} className="mb-4 text-lime-500" strokeWidth={3} />
-                        <p className="text-3xl font-black uppercase italic tracking-tighter leading-none">
-                          VÍDEO INDISPONÍVEL <span className="text-zinc-400 block text-xl mt-2 font-black italic">PARA ESTE EXERCÍCIO</span>
+                     <div className="aspect-video bg-zinc-100 flex flex-col items-center justify-center text-black p-6 md:p-10 text-center border-4 border-black w-full">
+                        <AlertTriangle size={48} className="mb-4 text-lime-500" strokeWidth={3} />
+                        <p className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter leading-tight">
+                          VÍDEO INDISPONÍVEL <span className="text-zinc-400 block text-lg md:text-xl mt-2 font-black italic">PARA ESTE EXERCÍCIO</span>
                         </p>
                      </div>
                    );
