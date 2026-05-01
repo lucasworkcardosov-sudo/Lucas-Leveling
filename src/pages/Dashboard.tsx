@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Profile } from '../types';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
-import { LogOut, Dumbbell, Trophy, ShieldAlert, CheckCircle2, Search } from 'lucide-react';
+import { LogOut, Dumbbell, Trophy, ShieldAlert, CheckCircle2, Search, TrendingUp, LayoutList } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
   profile: Profile;
@@ -13,6 +14,7 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogout = () => supabase.auth.signOut();
 
@@ -127,6 +129,30 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
           </div>
 
           <div className="lg:col-span-2 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button 
+                  onClick={() => navigate('/workout')}
+                  className="bg-lime-400 border-4 border-black p-6 flex items-center justify-between group hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                >
+                   <div className="text-left">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-black/50 mb-1">Acessar Agora</p>
+                      <h3 className="text-2xl font-black uppercase tracking-tighter italic leading-none">Ver Meu Treino</h3>
+                   </div>
+                   <LayoutList size={32} className="group-hover:scale-110 transition-transform" />
+                </button>
+
+                <button 
+                  onClick={() => navigate('/progress')}
+                  className="bg-white border-4 border-black p-6 flex items-center justify-between group hover:shadow-[8px_8px_0px_0px_rgba(163,230,53,1)] transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                >
+                   <div className="text-left">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Ver Evolução</p>
+                      <h3 className="text-2xl font-black uppercase tracking-tighter italic leading-none text-black">Progresso</h3>
+                   </div>
+                   <TrendingUp size={32} className="text-lime-500 group-hover:scale-110 transition-transform" />
+                </button>
+             </div>
+
              <div className="bg-white border-4 border-black p-8">
                 <div className="flex justify-between items-end mb-8">
                   <div>

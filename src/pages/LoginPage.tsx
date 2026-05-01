@@ -65,7 +65,7 @@ export const LoginPage = () => {
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: 'https://lucas-leveling.vercel.app/update-password',
       });
 
       if (resetError) throw resetError;

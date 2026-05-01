@@ -17,6 +17,16 @@ export const UpdatePasswordPage = () => {
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!password.trim()) {
+      setError('A senha não pode estar vazia.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('As senhas não coincidem.');
       return;
@@ -32,8 +42,9 @@ export const UpdatePasswordPage = () => {
 
       if (updateError) throw updateError;
       setSuccess(true);
-      // Redireciona para o dashboard após sucesso
-      setTimeout(() => navigate('/dashboard'), 2000);
+      
+      // Redireciona para o login após sucesso conforme solicitado
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
       setError(err.message || 'Erro ao atualizar senha.');
     } finally {

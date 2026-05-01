@@ -9,6 +9,9 @@ import { Dashboard } from './pages/Dashboard';
 import { PendingPage } from './pages/PendingPage';
 import { AdminPage } from './pages/AdminPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
+import { WorkoutPage } from './pages/WorkoutPage';
+import { ProgressPage } from './pages/ProgressPage';
+import { ExerciseDetail } from './pages/ExerciseDetail';
 import { Button } from './components/ui/Button';
 import { Settings, AlertTriangle } from 'lucide-react';
 
@@ -64,8 +67,9 @@ export default function App() {
 
       if (error) throw error;
       setProfile(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching profile:', error);
+      setInitError(error.message || 'Erro ao carregar seu perfil. O registro pode estar incompleto.');
     } finally {
       setLoading(false);
     }
@@ -74,13 +78,26 @@ export default function App() {
   if (initError) {
     return (
       <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md w-full bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(239,68,68,1)]">
+        <div className="max-w-md w-full bg-white border-4 border-black p-8 shadow-[16px_16px_0px_0px_rgba(239,68,68,1)]">
           <AlertTriangle className="mx-auto text-red-500 mb-4" size={48} />
           <h2 className="text-2xl font-black uppercase tracking-tighter mb-4 italic text-red-600">Erro de Inicialização</h2>
-          <p className="font-medium text-zinc-600 mb-6">{initError}</p>
-          <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
-            Tentar Novamente
-          </Button>
+          <p className="font-medium text-zinc-600 mb-6 text-sm">{initError}</p>
+          <div className="space-y-4">
+            <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+              Tentar Novamente
+            </Button>
+            <button 
+              onClick={() => supabase.auth.signOut().then(() => {
+                setSession(null);
+                setProfile(null);
+                setInitError(null);
+                window.location.reload();
+              })}
+              className="w-full text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-black transition-colors"
+            >
+              Forçar Sair da Sessão
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -88,8 +105,14 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 space-y-8">
         <div className="h-12 w-12 border-4 border-black border-t-lime-400 rounded-full animate-spin" />
+        <button 
+          onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
+          className="text-xs font-black uppercase tracking-widest text-zinc-400 border-2 border-zinc-200 px-4 py-2 hover:bg-black hover:text-white hover:border-black transition-all"
+        >
+          Sair da Sessão (Reset)
+        </button>
       </div>
     );
   }
@@ -140,6 +163,24 @@ export default function App() {
             <Dashboard profile={profile!} onRefresh={() => fetchProfile(session!.user.id)} />
           </ProtectedRoute>
         } />
+
+        <Route path="/workout" element={
+          <ProtectedRoute session={session} profile={profile} requiredStatus="approved">
+            <WorkoutPage profile={profile!} />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/progress" element={
+          <ProtectedRoute session={session} profile={profile} requiredStatus="approved">
+            <ProgressPage profile={profile!} />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/exercise/:id" element={
+          <ProtectedRoute session={session} profile={profile} requiredStatus="approved">
+            <ExerciseDetail />
+          </ProtectedRoute>
+        } />
         
         <Route path="/pending" element={
           <ProtectedRoute session={session} profile={profile} requiredStatus="pending">
@@ -163,7 +204,7 @@ export default function App() {
 function AuthRedirect({ session, profile }: { session: Session; profile: Profile | null }) {
   if (!profile) return <div className="min-h-screen flex items-center justify-center bg-zinc-50"><div className="h-12 w-12 border-4 border-black border-t-lime-400 rounded-full animate-spin" /></div>;
   
-  if (session.user.email === 'lucas.cadoso@gmail.com' || profile.role === 'admin') return <Navigate to="/admin" replace />;
+  if (profile.role === 'admin') return <Navigate to="/admin" replace />;
   if (profile.status === 'pending') return <Navigate to="/pending" replace />;
   return <Navigate to="/dashboard" replace />;
 }
@@ -185,8 +226,11 @@ function ProtectedRoute({
   if (!session) return <Navigate to="/login" replace />;
   if (!profile) return <div className="min-h-screen flex items-center justify-center bg-zinc-50"><div className="h-12 w-12 border-4 border-black border-t-lime-400 rounded-full animate-spin" /></div>;
 
-  if (requiredRole && profile.role !== requiredRole && session.user.email !== 'lucas.cadoso@gmail.com') return <Navigate to="/login" replace />;
-  if (requiredStatus && profile.status !== requiredStatus && profile.role !== 'admin') {
+  // Admins bypass all restrictions
+  if (profile.role === 'admin') return <>{children}</>;
+
+  if (requiredRole && profile.role !== requiredRole) return <Navigate to="/login" replace />;
+  if (requiredStatus && profile.status !== requiredStatus) {
     if (profile.status === 'pending') return <Navigate to="/pending" replace />;
     return <Navigate to="/login" replace />;
   }
