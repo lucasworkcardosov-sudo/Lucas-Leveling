@@ -89,11 +89,11 @@ export const LoginPage = () => {
         </div>
 
         <div className="bg-zinc-900 border-4 border-black p-8 shadow-[12px_12px_0px_0px_rgba(163,230,53,1)]">
-          <h1 className="text-4xl font-black text-white uppercase tracking-tighter italic mb-2">
-            Workout <span className="text-lime-400">Login</span>
+          <h1 className="text-4xl font-black text-white uppercase tracking-tighter italic mb-2 font-press text-[20px]">
+            Quest <span className="text-lime-400">Workout</span>
           </h1>
-          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-widest mb-8">
-            Entre na sua jornada fitness
+          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-widest mb-8 font-press">
+            ENTRE NA SUA JORNADA FITNESS
           </p>
 
           {error && (
@@ -148,8 +148,8 @@ export const LoginPage = () => {
                   </button>
                 </div>
 
-                <Button type="submit" isLoading={loading} variant="secondary" className="w-full py-4 text-lg">
-                  Entrar no Portal <ArrowRight className="ml-2" />
+                <Button type="submit" isLoading={loading} variant="secondary" className="w-full py-4 text-lg font-press text-[14px]">
+                  ENTRAR NO PORTAL <ArrowRight className="ml-2" />
                 </Button>
               </motion.form>
             ) : (

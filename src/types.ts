@@ -19,6 +19,7 @@ export interface Profile {
   gender?: string;
   xp: number;
   level: number;
+  class?: string;
   created_at: string;
 }
 

@@ -3,12 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Profile } from '../types';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
-import { User, Shield, Key, ArrowLeft, Save, AlertCircle, CheckCircle2, Scale, Ruler, Brain, Zap, Calendar, Clock } from 'lucide-react';
+import { User, Shield, Key, ArrowLeft, Save, AlertCircle, CheckCircle2, Scale, Ruler, Brain, Zap, Calendar, Clock, Sword, Axe, Target, Zap as Agility } from 'lucide-react';
 
 interface ProfilePageProps {
   profile: Profile;
   onRefresh: () => Promise<void>;
 }
+
+const CLASSES = [
+  { id: 'guerreiro', name: 'Guerreiro', description: 'Para aqueles que não temem o peso do ferro nem a dor da carga.', icon: Sword, color: 'bg-red-500' },
+  { id: 'elfo', name: 'Elfo', description: 'Focado na precisão e no controle absoluto do corpo.', icon: Target, color: 'bg-green-500' },
+  { id: 'anao', name: 'Anão', description: 'Resistência inabalável, forjado nas profundezas do esforço.', icon: Axe, color: 'bg-amber-700' },
+  { id: 'ladino', name: 'Ladino', description: 'Agilidade letal e movimentos certeiros.', icon: Agility, color: 'bg-zinc-600' }
+];
 
 export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
   const [fullName, setFullName] = useState(profile.full_name || '');
@@ -21,6 +28,8 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
   const [trainingPeriod, setTrainingPeriod] = useState(profile.training_period || '');
   const [trainingTime, setTrainingTime] = useState(profile.training_time || '');
   const [trainingDays, setTrainingDays] = useState(profile.training_days_per_week?.toString() || '');
+  const [selectedClass, setSelectedClass] = useState(profile.class || '');
+  const [isFlashing, setIsFlashing] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -38,7 +47,14 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
     setTrainingPeriod(profile.training_period || '');
     setTrainingTime(profile.training_time || '');
     setTrainingDays(profile.training_days_per_week?.toString() || '');
+    setSelectedClass(profile.class || '');
   }, [profile]);
+
+  const handleClassSelect = (classId: string) => {
+    setSelectedClass(classId);
+    setIsFlashing(true);
+    setTimeout(() => setIsFlashing(false), 500);
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +72,8 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
         gender: gender,
         training_period: trainingPeriod,
         training_time: trainingTime,
-        training_days_per_week: trainingDays ? parseInt(trainingDays) : null
+        training_days_per_week: trainingDays ? parseInt(trainingDays) : null,
+        class: selectedClass
       };
 
       console.log('Updating profile for ID:', profile.id, updateData);
@@ -94,19 +111,19 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#a3e635] font-sans p-6 md:p-12">
+    <div className={`min-h-screen bg-[#a3e635] font-pixel p-6 md:p-12 transition-colors duration-500 ${isFlashing ? 'animate-flash-green' : ''}`}>
       <div className="max-w-2xl mx-auto">
         <button 
           onClick={() => navigate(-1)}
-          className="flex items-center text-black font-black uppercase tracking-tighter mb-8 hover:translate-x-[-4px] transition-transform"
+          className="flex items-center text-black font-black uppercase tracking-tighter mb-8 hover:translate-x-[-4px] transition-transform font-press text-[10px]"
         >
-          <ArrowLeft size={24} className="mr-2" strokeWidth={3} /> Voltar
+          <ArrowLeft size={16} className="mr-2" strokeWidth={3} /> [ VOLTAR ]
         </button>
 
-        <div className="bg-white border-8 border-black p-8 md:p-12 shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-white border-[6px] border-black p-8 md:p-12 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] pixel-card">
           <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
-            <div className="w-32 h-32 bg-zinc-900 border-4 border-black rounded-full flex items-center justify-center relative shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-               <span className="text-4xl font-black text-white italic">
+            <div className="w-32 h-32 bg-zinc-900 border-[6px] border-rpg-gold flex items-center justify-center relative shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+               <span className="text-4xl font-black text-white italic font-press">
                  {(profile.nickname || profile.full_name || profile.email || '?')
                   .split(' ')
                   .map(n => n[0])
@@ -114,58 +131,92 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
                   .toUpperCase()
                   .substring(0, 2)}
                </span>
-               <div className="absolute bottom-0 right-0 bg-black text-white p-2 rounded-full border-2 border-white">
-                  <Shield size={16} />
+               <div className="absolute bottom-0 right-0 bg-rpg-gold text-black p-2 border-2 border-black">
+                  <Shield size={16} strokeWidth={3} />
                </div>
             </div>
             <div className="text-center md:text-left">
-              <h1 className="text-4xl font-black uppercase tracking-tighter italic leading-none mb-2">Editar Perfil</h1>
-              <p className="font-bold text-zinc-500 uppercase tracking-widest text-xs">Aperfeiçoe sua identidade de atleta</p>
+              <h1 className="text-4xl font-black uppercase tracking-tighter italic leading-none mb-2 font-press text-2xl md:text-3xl">Editar Herói</h1>
+              <p className="font-bold text-zinc-500 uppercase tracking-widest text-sm">Personalize os atributos do seu personagem</p>
             </div>
           </div>
 
           {message && (
-            <div className={`mb-8 p-4 border-4 border-black flex items-center space-x-3 ${message.type === 'success' ? 'bg-lime-400' : 'bg-red-400'}`}>
+            <div className={`mb-8 p-4 border-[6px] border-black flex items-center space-x-3 ${message.type === 'success' ? 'bg-lime-400' : 'bg-red-400'}`}>
               {message.type === 'success' ? <CheckCircle2 size={24} className="text-black" /> : <AlertCircle size={24} className="text-black" />}
-              <span className="font-black uppercase tracking-tight text-sm">{message.text}</span>
+              <span className="font-black uppercase tracking-tight text-lg">{message.text}</span>
             </div>
           )}
 
+          <div className="mb-12">
+            <h2 className="text-xl font-black uppercase mb-6 font-press text-sm border-b-4 border-black pb-2 inline-block">ESCOLHA SUA CLASSE</h2>
+            <div className="grid grid-cols-2 gap-4">
+               {CLASSES.map((cls) => {
+                 const Icon = cls.icon;
+                 const isSelected = selectedClass === cls.id;
+                 return (
+                   <button
+                     key={cls.id}
+                     type="button"
+                     onClick={() => handleClassSelect(cls.id)}
+                     className={`p-4 border-4 border-black transition-all flex flex-col items-center gap-2 group relative ${
+                       isSelected 
+                       ? 'bg-black text-white scale-105 shadow-[6px_6px_0px_0px_#FFD700] border-rpg-gold z-10' 
+                       : 'bg-zinc-50 text-black hover:bg-zinc-100 hover:translate-y-[-2px]'
+                     }`}
+                   >
+                     {isSelected && (
+                       <div className="absolute -top-3 -right-3 bg-rpg-gold text-black p-1 border-2 border-black rotate-12 animate-bounce">
+                         <span className="text-[10px] font-black uppercase font-press">TOP</span>
+                       </div>
+                     )}
+                     <div className={`w-12 h-12 flex items-center justify-center border-2 border-black ${isSelected ? 'bg-zinc-800' : 'bg-white'}`}>
+                       <Icon size={24} className={isSelected ? 'text-rpg-gold' : 'text-black'} strokeWidth={3} />
+                     </div>
+                     <span className="font-press text-[10px] uppercase leading-tight">{cls.name}</span>
+                     <span className="text-[10px] font-bold uppercase opacity-60">{cls.description}</span>
+                   </button>
+                 );
+               })}
+            </div>
+          </div>
+
           <form onSubmit={handleUpdateProfile} className="space-y-8">
-            <div className="bg-zinc-900 text-white p-4 border-l-8 border-lime-400 mb-8">
-               <p className="text-[10px] font-black uppercase tracking-widest leading-tight">
-                 <Shield size={12} className="inline mr-2 text-lime-400" />
-                 Nota: Suas informações físicas são compartilhadas com seu treinador para a montagem de treinos personalizados.
+            <div className="bg-zinc-900 text-white p-4 border-l-8 border-rpg-gold mb-8 relative overflow-hidden">
+               <div className="absolute top-0 right-0 opacity-10 font-press text-4xl rotate-12">LVL {profile.level}</div>
+               <p className="text-sm font-black uppercase tracking-widest leading-tight relative z-10">
+                 <Shield size={14} className="inline mr-2 text-rpg-gold" />
+                 Atributos compartilhados com o Mestre do Santuário.
                </p>
             </div>
 
             <div className="space-y-6">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="space-y-2">
-                   <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Nome Completo</label>
+                   <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Nome de Herói</label>
                    <div className="relative">
                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                      <input 
                        type="text" 
                        value={fullName}
                        onChange={(e) => setFullName(e.target.value)}
-                       className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold placeholder:text-zinc-300 focus:outline-none focus:bg-white transition-colors"
-                       placeholder="Seu nome completo"
+                       className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-xl font-bold placeholder:text-zinc-300 focus:outline-none focus:bg-white transition-colors"
+                       placeholder="Seu nome real"
                        required
                      />
                    </div>
                  </div>
 
                  <div className="space-y-2">
-                   <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Nickname</label>
+                   <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Codinome</label>
                    <div className="relative">
-                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-zinc-400 text-xl italic">@</span>
+                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-zinc-400 text-xl italic font-press">@</span>
                      <input 
                        type="text" 
                        value={nickname}
                        onChange={(e) => setNickname(e.target.value)}
-                       className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold placeholder:text-zinc-300 focus:outline-none focus:bg-white transition-colors"
-                       placeholder="seu_apelido"
+                       className="w-full bg-zinc-50 border-4 border-black p-4 pl-14 text-xl font-bold placeholder:text-zinc-300 focus:outline-none focus:bg-white transition-colors"
+                       placeholder="nick"
                      />
                    </div>
                  </div>
@@ -173,7 +224,7 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
 
                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Peso (kg)</label>
+                    <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Carga (kg)</label>
                     <div className="relative">
                       <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                       <input 
@@ -181,35 +232,35 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
                         step="0.1"
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
-                        className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold focus:outline-none focus:bg-white transition-colors"
+                        className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-xl font-bold focus:outline-none focus:bg-white transition-colors"
                         placeholder="00.0"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Altura (cm)</label>
+                    <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Envergadura (cm)</label>
                     <div className="relative">
                       <Ruler className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                       <input 
                         type="number" 
                         value={height}
                         onChange={(e) => setHeight(e.target.value)}
-                        className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold focus:outline-none focus:bg-white transition-colors"
+                        className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-xl font-bold focus:outline-none focus:bg-white transition-colors"
                         placeholder="000"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2 col-span-2 md:col-span-1">
-                    <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Idade</label>
+                    <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Ciclos</label>
                     <div className="relative">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                       <input 
                         type="number" 
                         value={age}
                         onChange={(e) => setAge(e.target.value)}
-                        className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold focus:outline-none focus:bg-white transition-colors"
+                        className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-xl font-bold focus:outline-none focus:bg-white transition-colors"
                         placeholder="00"
                       />
                     </div>
@@ -217,26 +268,26 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
                </div>
 
                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Objetivo Principal</label>
+                  <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Sua Quest Principal</label>
                   <div className="relative">
                     <Brain className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                     <select 
                       value={goal || ''}
                       onChange={(e) => setGoal(e.target.value)}
-                      className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold focus:outline-none focus:bg-white transition-colors appearance-none uppercase italic"
+                      className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-xl font-bold focus:outline-none focus:bg-white transition-colors appearance-none uppercase italic"
                     >
-                      <option value="" disabled>Selecione um objetivo</option>
-                      <option value="Hipertrofia">Hipertrofia</option>
-                      <option value="Emagrecimento">Emagrecimento</option>
-                      <option value="Condicionamento">Condicionamento Físico</option>
-                      <option value="Força">Ganho de Força</option>
-                      <option value="Saúde">Saúde e Bem-estar</option>
+                      <option value="" disabled>Qual seu objetivo?</option>
+                      <option value="Hipertrofia">Ganho de Massa (Bulk)</option>
+                      <option value="Emagrecimento">Definição (Cut)</option>
+                      <option value="Condicionamento">Jornada de Resistência</option>
+                      <option value="Força">Força Bruta</option>
+                      <option value="Saúde">Manutenção (Saúde)</option>
                     </select>
                   </div>
                </div>
 
                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Gênero</label>
+                  <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Gênero do Avatar</label>
                   <div className="grid grid-cols-3 gap-2">
                      {['Masculino', 'Feminino', 'Outro'].map((g) => (
                        <button
@@ -247,50 +298,50 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
                            gender === g ? 'bg-black text-white' : 'bg-white text-black hover:bg-zinc-100'
                          }`}
                        >
-                         {g === 'Outro' ? 'NÃO DIZER' : g}
+                         {g === 'Outro' ? 'N/A' : g}
                        </button>
                      ))}
                   </div>
                </div>
 
                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Nível de Experiência</label>
+                  <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Experiência de Jogo</label>
                   <div className="relative">
                     <Zap className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                     <select 
                       value={trainingPeriod || ''}
                       onChange={(e) => setTrainingPeriod(e.target.value)}
-                      className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold focus:outline-none focus:bg-white transition-colors appearance-none uppercase italic"
+                      className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-xl font-bold focus:outline-none focus:bg-white transition-all appearance-none uppercase italic"
                     >
-                      <option value="" disabled>Quanto tempo você treina?</option>
-                      <option value="Iniciante (0-6 meses)">Iniciante (0-6 meses)</option>
-                      <option value="Intermediário (6-12 meses)">Intermediário (6-12 meses)</option>
-                      <option value="Avançado (1-2 anos)">Avançado (1-2 anos)</option>
-                      <option value="Elite (2+ anos)">Elite (2+ anos)</option>
+                      <option value="" disabled>Há quanto tempo nesta jornada?</option>
+                      <option value="Iniciante (0-6 meses)">Novo Recruta (0-6m)</option>
+                      <option value="Intermediário (6-12 meses)">Aventureiro (6-12m)</option>
+                      <option value="Avançado (1-2 anos)">Veterano (1-2a)</option>
+                      <option value="Elite (2+ anos)">Herói Lendário (2a+)</option>
                     </select>
                   </div>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="space-y-2">
-                   <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Período de Treino</label>
+                   <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Horário de Dungeon</label>
                    <div className="relative">
                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                      <select 
                        value={trainingTime || ''}
                        onChange={(e) => setTrainingTime(e.target.value)}
-                       className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold focus:outline-none focus:bg-white transition-colors appearance-none uppercase italic"
+                       className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-xl font-bold focus:outline-none focus:bg-white transition-colors appearance-none uppercase italic"
                      >
-                       <option value="" disabled>Qual seu melhor horário?</option>
-                       <option value="Manhã">Manhã</option>
-                       <option value="Tarde">Tarde</option>
-                       <option value="Noite">Noite</option>
+                       <option value="" disabled>Melhor horário?</option>
+                       <option value="Manhã">Patrulha da Alvorada</option>
+                       <option value="Tarde">Incursão do Meio-Dia</option>
+                       <option value="Noite">Turno da Noite</option>
                      </select>
                    </div>
                  </div>
 
                  <div className="space-y-2">
-                   <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Frequência Semanal</label>
+                   <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Dungeons / Semana</label>
                    <div className="relative">
                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                      <input 
@@ -299,37 +350,36 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
                        max="7"
                        value={trainingDays}
                        onChange={(e) => setTrainingDays(e.target.value)}
-                       className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold focus:outline-none focus:bg-white transition-colors"
-                       placeholder="Ex: 5 dias"
+                       className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-xl font-bold focus:outline-none focus:bg-white transition-colors"
+                       placeholder="Ex: 5"
                      />
                    </div>
                  </div>
                </div>
 
-               <div className="pt-6 border-t-4 border-zinc-100">
+               <div className="pt-6 border-t-8 border-black">
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-zinc-400 ml-1">Nova Senha</label>
+                    <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Selo de Segurança (Senha)</label>
                     <div className="relative">
                       <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
                       <input 
                         type="password" 
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-lg font-bold placeholder:text-zinc-300 focus:outline-none focus:bg-white transition-colors"
-                        placeholder="••••••••"
+                        className="w-full bg-zinc-50 border-4 border-black p-4 pl-12 text-xl font-bold placeholder:text-zinc-300 focus:outline-none focus:bg-white transition-colors font-press"
+                        placeholder="••••"
                       />
                     </div>
-                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">Deixe em branco para manter a atual</p>
                   </div>
                </div>
             </div>
 
             <Button 
               type="submit" 
-              className="w-full h-16 text-xl"
+              className="w-full h-20 text-2xl font-press !border-8 border-black shadow-[8px_8px_0px_0px_#CD7F32]"
               isLoading={loading}
             >
-              <Save size={24} className="mr-3" /> Salvar Alterações
+              <Save size={24} className="mr-3" /> [ SALVAR ]
             </Button>
           </form>
         </div>

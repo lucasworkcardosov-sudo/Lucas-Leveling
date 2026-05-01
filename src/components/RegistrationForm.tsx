@@ -78,8 +78,8 @@ export const RegistrationForm = ({ onComplete }: { onComplete: () => void }) => 
   return (
     <div className="w-full max-w-md mx-auto bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
       <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-3xl font-black uppercase tracking-tighter italic">
-          Join the <span className="text-lime-500">Quest</span>
+        <h2 className="text-3xl font-black uppercase tracking-tighter italic font-press text-[18px]">
+          Quest <span className="text-lime-500">Workout</span>
         </h2>
         <div className="flex space-x-1">
           {[1, 2].map((s) => (

@@ -78,7 +78,7 @@ export const WorkoutPage = ({ profile }: WorkoutPageProps) => {
           </button>
           <div className="flex items-center space-x-2">
             <Dumbbell className="text-lime-500" strokeWidth={3} />
-            <span className="font-black uppercase tracking-tighter text-2xl italic text-black">TREINOS.</span>
+            <span className="font-black uppercase tracking-tighter text-2xl italic text-black font-press text-[14px]">QUEST WORKOUT</span>
           </div>
         </div>
 
@@ -96,7 +96,7 @@ export const WorkoutPage = ({ profile }: WorkoutPageProps) => {
       <main className="max-w-4xl mx-auto p-6 md:p-10">
         <div className="mb-10 text-center md:text-left">
           <h1 className="text-5xl font-black uppercase tracking-tighter italic mb-2 leading-none">
-            Sua Rotina de <span className="text-lime-400">Ferro</span>
+            Suas <span className="text-lime-400">Dungeons</span>
           </h1>
           <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Execute cada repetição com perfeição.</p>
         </div>
@@ -135,7 +135,7 @@ export const WorkoutPage = ({ profile }: WorkoutPageProps) => {
                 )}
               </div>
               <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
-                {exercises.length} Exercícios Prescritos
+                {exercises.length} Exercícios na Dungeon
               </p>
             </div>
 

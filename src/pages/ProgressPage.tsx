@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Calendar, Trophy, Zap } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Calendar, Trophy, Zap, Dumbbell } from 'lucide-react';
 import { 
   LineChart, 
   Line, 
@@ -86,8 +86,8 @@ export const ProgressPage = ({ profile }: ProgressPageProps) => {
             <ArrowLeft size={24} />
           </button>
           <div className="flex items-center space-x-2">
-            <TrendingUp className="text-lime-500" strokeWidth={3} />
-            <span className="font-black uppercase tracking-tighter text-2xl italic text-black">EVOLUÇÃO.</span>
+            <Dumbbell className="text-lime-500" strokeWidth={3} />
+            <span className="font-black uppercase tracking-tighter text-2xl italic text-black font-press text-[14px]">QUEST WORKOUT</span>
           </div>
         </div>
 
@@ -169,7 +169,7 @@ export const ProgressPage = ({ profile }: ProgressPageProps) => {
                              +{item.gained}
                           </div>
                           <div>
-                             <p className="font-black uppercase tracking-tighter text-lg">Treino Concluído</p>
+                             <p className="font-black uppercase tracking-tighter text-lg">Quest Finalizada</p>
                              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{item.date}</p>
                           </div>
                        </div>
