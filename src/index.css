@@ -1,17 +1,13 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Cinzel:wght@400;700;900&family=Uncial+Antiqua&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap');
 
 @theme {
   --font-pixel: "VT323", monospace;
   --font-press: "Press Start 2P", cursive;
-  --font-epic: "Cinzel", serif;
-  --font-gothic: "Uncial Antiqua", cursive;
   --color-rpg-gold: #FFD700;
   --color-rpg-bronze: #CD7F32;
   --color-rpg-life: #e11d48;
   --color-rpg-mana: #2563eb;
-  --color-rpg-slate: #2c3e50;
-  --color-rpg-stone: #4a4a4a;
 }
 
 @layer base {
@@ -62,34 +58,4 @@
 
 .animate-flash-green {
   animation: flash-green 0.5s ease-out;
-}
-
-/* RPG UI Classes */
-.rpg-slot {
-  @apply bg-zinc-800 border-2 border-zinc-600 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5),2px_2px_0px_black];
-}
-
-.rpg-slot-active {
-  @apply bg-zinc-900 border-2 border-rpg-gold shadow-[inset_2px_2px_4px_rgba(0,0,0,0.8),0_0_8px_rgba(255,215,0,0.3)];
-}
-
-.rpg-panel {
-  background-color: #1a1a1a;
-  background-image: radial-gradient(circle at center, #2a2a2a 0%, #1a1a1a 100%);
-  border: 4px solid #333;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 8px 8px 0 rgba(0,0,0,0.2);
-}
-
-.rpg-metallic {
-  @apply bg-zinc-700 border-x-4 border-y-2 border-zinc-500 shadow-[inset_2px_2px_0px_rgba(255,255,255,0.1),inset_-2px_-2px_0px_rgba(0,0,0,0.3),4px_4px_0px_black];
-}
-
-.stone-bg {
-  background-color: #333;
-  background-image: 
-    linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.05) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.05) 75%);
-  background-size: 20px 20px;
 }

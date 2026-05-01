@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Calendar, Trophy, Zap, Dumbbell } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Calendar, Trophy, Zap } from 'lucide-react';
 import { 
   LineChart, 
   Line, 

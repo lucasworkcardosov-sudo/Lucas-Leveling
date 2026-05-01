@@ -11,10 +11,10 @@ interface ProfilePageProps {
 }
 
 const CLASSES = [
-  { id: 'guerreiro', name: 'Guerreiro', description: 'Para aqueles que não temem o peso do ferro nem a dor da carga.', icon: Sword, color: 'bg-red-500' },
-  { id: 'elfo', name: 'Elfo', description: 'Focado na precisão e no controle absoluto do corpo.', icon: Target, color: 'bg-green-500' },
-  { id: 'anao', name: 'Anão', description: 'Resistência inabalável, forjado nas profundezas do esforço.', icon: Axe, color: 'bg-amber-700' },
-  { id: 'ladino', name: 'Ladino', description: 'Agilidade letal e movimentos certeiros.', icon: Agility, color: 'bg-zinc-600' }
+  { id: 'guerreiro', name: 'Guerreiro', description: 'Força Bruta', icon: Sword, color: 'bg-red-500' },
+  { id: 'elfo', name: 'Elfo', description: 'Destreza Pura', icon: Target, color: 'bg-green-500' },
+  { id: 'anao', name: 'Anão', description: 'Resistência', icon: Axe, color: 'bg-amber-700' },
+  { id: 'ladino', name: 'Ladino', description: 'Agilidade', icon: Agility, color: 'bg-zinc-600' }
 ];
 
 export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
