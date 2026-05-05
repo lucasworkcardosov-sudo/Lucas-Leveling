@@ -7,11 +7,15 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { Dashboard } from './pages/Dashboard';
 import { AdminPage } from './pages/AdminPage';
+import { ManageRegistrationsPage } from './pages/ManageRegistrationsPage';
+import { AdminAvatarsPage } from './pages/AdminAvatarsPage';
+import { PendingApprovalPage } from './pages/PendingApprovalPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
 import { WorkoutPage } from './pages/WorkoutPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { ExerciseDetail } from './pages/ExerciseDetail';
 import { ProfilePage } from './pages/ProfilePage';
+import { ProfessorDashboard } from './pages/ProfessorDashboard';
 import { Button } from './components/ui/Button';
 import { Settings, AlertTriangle } from 'lucide-react';
 
@@ -32,18 +36,49 @@ export default function App() {
       const client = getSupabase();
 
       // Get initial session
-      client.auth.getSession().then(({ data: { session } }) => {
+      client.auth.getSession().then(({ data: { session }, error }) => {
         if (!mounted) return;
+        
+        if (error) {
+          console.error('Session get error:', error);
+          // If refresh token is invalid or missing, clear everything and go to login
+          if (
+            error.message.includes('Refresh Token Not Found') || 
+            error.message.includes('invalid_grant') ||
+            error.message.includes('refresh_token_not_found') ||
+            error.status === 400 ||
+            error.status === 401
+          ) {
+            client.auth.signOut().catch(() => {});
+            localStorage.clear(); // Nuclear option to clear corrupted session data
+            setSession(null);
+            setLoading(false);
+            return;
+          }
+          throw error;
+        }
+
         setSession(session);
-        if (session) {
-          fetchProfile(session.user.id);
-        } else {
+        if (!session) {
           setLoading(false);
         }
       }).catch(err => {
         if (!mounted) return;
         console.error('Session fetch error:', err);
-        setInitError('Erro ao conectar com o servidor de autenticação.');
+        
+        // Se for qualquer erro de autenticação/token, resetamos para permitir novo login
+        if (err.message && (
+          err.message.includes('Refresh Token Not Found') || 
+          err.message.includes('refresh_token_not_found') ||
+          err.message.includes('invalid_grant') ||
+          err.message.includes('session_not_found')
+        )) {
+          client.auth.signOut().catch(() => {});
+          localStorage.clear();
+          setSession(null);
+        } else {
+          setInitError('Houve um problema com sua sessão. Por favor, tente sair e entrar novamente.');
+        }
         setLoading(false);
       });
 
@@ -53,7 +88,6 @@ export default function App() {
         
         if (event === 'SIGNED_IN') {
           setSession(newSession);
-          if (newSession) fetchProfile(newSession.user.id);
         } else if (event === 'SIGNED_OUT') {
           setSession(null);
           setProfile(null);
@@ -74,15 +108,127 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    // 5-second Fallback: If still loading after 5s, check session/profile and stop loading
+    // to prevent infinite loop of "Loading Profile..."
+    const timeout = setTimeout(() => {
+      if (loading && session) {
+        console.warn('[App] Profile fetch timeout reached. Checking state...');
+        if (!profile) {
+          // If we have a session but NO profile after 5s, we might need a fresh start or it's a new user
+          setInitError('O tempo de carregamento do perfil expirou. Verifique sua conexão ou tente reentrar.');
+        }
+        setLoading(false);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [loading, session, profile]);
+
+  useEffect(() => {
+    let profileSubscription: any = null;
+
+    if (session?.user?.id) {
+      fetchProfile(session.user.id);
+
+      // Real-time listener for profile changes (crucial for "Pendente" -> "Aprovado" transition)
+      profileSubscription = getSupabase()
+        .channel(`profile:${session.user.id}`)
+        .on(
+          'postgres_changes', 
+          { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'profiles', 
+            filter: `id=eq.${session.user.id}` 
+          }, 
+          (payload) => {
+            console.log('[App] Profile update detected via real-time:', payload.new);
+            setProfile(payload.new as Profile);
+          }
+        )
+        .subscribe();
+    } else {
+      setProfile(null);
+    }
+
+    return () => {
+      if (profileSubscription) getSupabase().removeChannel(profileSubscription);
+    };
+  }, [session]);
+
   const fetchProfile = async (userId: string) => {
     try {
+      // Prioritize auth.getUser() metadata for role stability as requested
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .setHeader('Cache-Control', 'no-cache')
+        .setHeader('Pragma', 'no-cache')
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        // Handle 42P17 (infinite recursion/infinite loop)
+        if (error.code === '42P17' || error.message.includes('recursion')) {
+          console.error('[App] Infinite recursion detected in RLS policies.');
+          
+          // Use auth metadata as safe fallback to prevent rendering crash
+          if (user?.user_metadata) {
+            setProfile({
+              id: userId,
+              email: user.email || '',
+              role: user.user_metadata.role || 'aluno',
+              class: user.user_metadata.class || 'Guerreiro',
+              full_name: user.user_metadata.full_name || '',
+              nickname: user.user_metadata.nickname || '',
+              avatar_url: user.user_metadata.avatar_url || null,
+              created_at: user.created_at
+            } as Profile);
+            setLoading(false);
+            return;
+          }
+
+          // If no metadata available, reset session to allow fresh start
+          setInitError('Erro de Recursão no Banco. Limpando sessão para segurança.');
+          await supabase.auth.signOut();
+          localStorage.clear();
+          return;
+        }
+
+        // Se for erro de autenticação (JWT expirado ou algo assim que não foi pego pelo getSession)
+        if (error.code === 'PGRST301' || error.message.includes('JWT')) {
+          console.error('Auth error during profile fetch:', error);
+          await supabase.auth.signOut();
+          setSession(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+        throw error;
+      }
+      if (!data) {
+        // Tolerant check: If profile is missing, it might still be generating after registration
+        console.warn(`[App] Profile not found for user ${userId}. Retrying or waiting...`);
+        
+        // Use auth metadata as fallback if available
+        if (user?.user_metadata) {
+          setProfile({
+            id: userId,
+            email: user.email || '',
+            role: user.user_metadata.role || 'aluno',
+            class: user.user_metadata.class || 'Guerreiro',
+            full_name: user.user_metadata.full_name || '',
+            nickname: user.user_metadata.nickname || '',
+            avatar_url: user.user_metadata.avatar_url || null,
+            created_at: user.created_at
+          } as Profile);
+        }
+        return;
+      }
+
       setProfile(data);
     } catch (error: any) {
       console.error('Error fetching profile:', error);
@@ -100,16 +246,38 @@ export default function App() {
           <h2 className="text-2xl font-black uppercase tracking-tighter mb-4 italic text-red-600">Erro de Inicialização</h2>
           <p className="font-medium text-zinc-600 mb-6 text-sm">{initError}</p>
           <div className="space-y-4">
-            <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+            <Button 
+              onClick={() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                // Clear any supabase storage specifically if possible via their library, 
+                // but localStorage.clear() is usually enough.
+                window.location.reload();
+              }} 
+              variant="outline" 
+              className="w-full"
+            >
               Tentar Novamente
             </Button>
             <button 
-              onClick={() => supabase.auth.signOut().then(() => {
+              onClick={async () => {
+                console.log('[App] Forced session reset triggered...');
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Clear any potential cookies or IndexedDB if possible (basic approach)
+                try {
+                  const dbs = await window.indexedDB.databases();
+                  dbs.forEach(db => { if (db.name) window.indexedDB.deleteDatabase(db.name); });
+                } catch (e) {}
+
+                await supabase.auth.signOut().catch(() => {});
+                
                 setSession(null);
                 setProfile(null);
                 setInitError(null);
-                window.location.reload();
-              })}
+                window.location.href = '/login';
+              }}
               className="w-full text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-black transition-colors"
             >
               Forçar Sair da Sessão
@@ -211,6 +379,36 @@ export default function App() {
           </ProtectedRoute>
         } />
 
+        <Route path="/admin/registrations" element={
+          <ProtectedRoute session={session} profile={profile} requiredRole="admin">
+            <ManageRegistrationsPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/avatars" element={
+          <ProtectedRoute session={session} profile={profile} requiredRole="admin">
+            <AdminAvatarsPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/professor/dashboard" element={
+          <ProtectedRoute session={session} profile={profile} requiredRole="professor">
+            <ProfessorDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/pending-approval" element={
+          session ? (
+            profile && profile.role !== 'pendente' ? (
+              <AuthRedirect session={session} profile={profile} />
+            ) : (
+              <PendingApprovalPage />
+            )
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        } />
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
@@ -221,7 +419,10 @@ export default function App() {
 function AuthRedirect({ session, profile }: { session: Session; profile: Profile | null }) {
   if (!profile) return <div className="min-h-screen flex items-center justify-center bg-zinc-50"><div className="h-12 w-12 border-4 border-black border-t-lime-400 rounded-full animate-spin" /></div>;
   
-  if (profile.role === 'admin') return <Navigate to="/admin" replace />;
+  const isMasterAdmin = profile.email === 'lucas.cadoso@gmail.com' || profile.email === 'lucas.workcardosov@gmail.com';
+  if (profile.role === 'admin' || isMasterAdmin) return <Navigate to="/admin" replace />;
+  if (profile.role === 'professor') return <Navigate to="/professor/dashboard" replace />;
+  if (profile.role === 'pendente') return <Navigate to="/pending-approval" replace />;
   return <Navigate to="/dashboard" replace />;
 }
 
@@ -240,8 +441,12 @@ function ProtectedRoute({
   if (!session) return <Navigate to="/login" replace />;
   if (!profile) return <div className="min-h-screen flex items-center justify-center bg-zinc-50"><div className="h-12 w-12 border-4 border-black border-t-lime-400 rounded-full animate-spin" /></div>;
 
-  // Admins bypass all restrictions
-  if (profile.role === 'admin') return <>{children}</>;
+  // Admins or Master Emails bypass all restrictions
+  const isMasterAdmin = profile.email === 'lucas.cadoso@gmail.com' || profile.email === 'lucas.workcardosov@gmail.com';
+  if (profile.role === 'admin' || isMasterAdmin) return <>{children}</>;
+
+  // Se está pendente, manda para espera
+  if (profile.role === 'pendente') return <Navigate to="/pending-approval" replace />;
 
   if (requiredRole && profile.role !== requiredRole) return <Navigate to="/login" replace />;
   

@@ -6,6 +6,7 @@ import { Dumbbell, ChevronRight, PlayCircle, Clock, Hash, ArrowLeft, AlertTriang
 import { useNavigate } from 'react-router-dom';
 import { getYoutubeEmbedUrl } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { getDynamicAvatar } from '../lib/avatarLibrary';
 
 interface WorkoutPageProps {
   profile: Profile;
@@ -87,8 +88,12 @@ export const WorkoutPage = ({ profile }: WorkoutPageProps) => {
             <p className="text-[10px] font-black uppercase text-zinc-400 leading-none">Perfil</p>
             <p className="text-xs font-black uppercase text-black truncate max-w-[120px]">{displayName}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-zinc-900 border-2 border-black flex items-center justify-center">
-            <span className="text-xs font-black text-white italic">{initials}</span>
+          <div className="w-10 h-10 rounded-full bg-zinc-900 border-2 border-black flex items-center justify-center overflow-hidden">
+            {profile.avatar_url || getDynamicAvatar(profile) ? (
+              <img src={profile.avatar_url || getDynamicAvatar(profile)!} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="text-xs font-black text-white italic">{initials}</span>
+            )}
           </div>
         </div>
       </header>

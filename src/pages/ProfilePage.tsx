@@ -5,6 +5,10 @@ import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
 import { User, Shield, Key, ArrowLeft, Save, AlertCircle, CheckCircle2, Scale, Ruler, Brain, Zap, Calendar, Clock, Sword, Axe, Target, Zap as Agility } from 'lucide-react';
 
+import { AvatarUpload } from '../components/AvatarUpload';
+import { EvolutionGallery } from '../components/EvolutionGallery';
+import { getDynamicAvatar } from '../lib/avatarLibrary';
+
 interface ProfilePageProps {
   profile: Profile;
   onRefresh: () => Promise<void>;
@@ -43,7 +47,7 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
     setHeight(profile.height?.toString() || '');
     setAge(profile.age?.toString() || '');
     setGoal(profile.goal || '');
-    setGender(profile.gender || 'Masculino');
+    setGender(profile.gender || 'M');
     setTrainingPeriod(profile.training_period || '');
     setTrainingTime(profile.training_time || '');
     setTrainingDays(profile.training_days_per_week?.toString() || '');
@@ -122,19 +126,17 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
 
         <div className="bg-white border-[6px] border-black p-8 md:p-12 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] pixel-card">
           <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
-            <div className="w-32 h-32 bg-zinc-900 border-[6px] border-rpg-gold flex items-center justify-center relative shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-               <span className="text-4xl font-black text-white italic font-press">
-                 {(profile.nickname || profile.full_name || profile.email || '?')
-                  .split(' ')
-                  .map(n => n[0])
-                  .join('')
-                  .toUpperCase()
-                  .substring(0, 2)}
-               </span>
-               <div className="absolute bottom-0 right-0 bg-rpg-gold text-black p-2 border-2 border-black">
-                  <Shield size={16} strokeWidth={3} />
-               </div>
-            </div>
+            <AvatarUpload 
+              userId={profile.id}
+              currentAvatarUrl={profile.avatar_url || getDynamicAvatar(profile)}
+              onUploadComplete={() => onRefresh()}
+              initials={(profile.nickname || profile.full_name || profile.email || '?')
+                .split(' ')
+                .map(n => n[0])
+                .join('')
+                .toUpperCase()
+                .substring(0, 2)}
+            />
             <div className="text-center md:text-left">
               <h1 className="text-4xl font-black uppercase tracking-tighter italic leading-none mb-2 font-press text-2xl md:text-3xl">Editar Herói</h1>
               <p className="font-bold text-zinc-500 uppercase tracking-widest text-sm">Personalize os atributos do seu personagem</p>
@@ -287,18 +289,19 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
                </div>
 
                <div className="space-y-2">
-                  <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Gênero do Avatar</label>
-                  <div className="grid grid-cols-3 gap-2">
-                     {['Masculino', 'Feminino', 'Outro'].map((g) => (
+                  <label className="text-sm font-black uppercase tracking-widest text-zinc-400 ml-1">Sexo do Avatar</label>
+                  <div className="grid grid-cols-2 gap-4">
+                     {[{ id: 'M', label: 'MASCULINO (He)' }, { id: 'F', label: 'FEMININO (She)' }].map((g) => (
                        <button
-                         key={g}
+                         key={g.id}
                          type="button"
-                         onClick={() => setGender(g)}
-                         className={`py-3 border-4 border-black font-black uppercase italic text-sm transition-all ${
-                           gender === g ? 'bg-black text-white' : 'bg-white text-black hover:bg-zinc-100'
+                         onClick={() => setGender(g.id)}
+                         className={`py-4 border-4 border-black font-black uppercase italic text-xs transition-all flex items-center justify-center gap-2 ${
+                           gender === g.id ? 'bg-black text-white shadow-[4px_4px_0px_0px_#A3E635]' : 'bg-white text-black hover:bg-zinc-100'
                          }`}
                        >
-                         {g === 'Outro' ? 'N/A' : g}
+                         <Shield size={16} className={gender === g.id ? 'text-lime-400' : 'text-zinc-300'} />
+                         {g.label}
                        </button>
                      ))}
                   </div>
@@ -382,6 +385,11 @@ export const ProfilePage = ({ profile, onRefresh }: ProfilePageProps) => {
               <Save size={24} className="mr-3" /> [ SALVAR ]
             </Button>
           </form>
+
+          {/* Evolution Gallery */}
+          <div className="mt-16 pt-12 border-t-8 border-black">
+            <EvolutionGallery profile={profile} />
+          </div>
         </div>
       </div>
     </div>

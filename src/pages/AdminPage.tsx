@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
 import { Profile } from '../types';
-import { LogOut, Users, ShieldCheck, Dumbbell, TrendingUp, LayoutList, X, Scale, Ruler, Brain, Mail, User, Zap, Activity, Plus, Save, Trash2, ListChecks, Clock, Calendar, BookOpen, Video, Info, Pencil, AlertTriangle, RefreshCcw, Play, Edit } from 'lucide-react';
+import { LogOut, Users, UserPlus, ShieldCheck, Dumbbell, TrendingUp, LayoutList, X, Scale, Ruler, Brain, Mail, User, Zap, Activity, Plus, Save, Trash2, ListChecks, Clock, Calendar, BookOpen, Video, Info, Pencil, AlertTriangle, RefreshCcw, Play, Edit, Image as ImageIcon, GraduationCap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import { getDynamicAvatar } from '../lib/avatarLibrary';
 
 interface ExerciseBank {
   id: string;
@@ -71,9 +72,10 @@ export const AdminPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchData();
+    // Force clean data on every mount to avoid stale data
+    fetchData(false);
     fetchExercises();
-  }, []);
+  }, [navigate]); // navigate dependency to ensure refresh if we come back from other pages
 
   const fetchExercises = async () => {
     const { data } = await supabase.from('exercises').select('*').order('name');
@@ -89,14 +91,26 @@ export const AdminPage = () => {
     }
   };
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const profilesRes = await supabase.from('profiles').select('*').eq('role', 'aluno').order('created_at', { ascending: false });
-      const workoutsRes = await supabase.from('workouts').select('id', { count: 'exact' });
-      const historyRes = await supabase.from('workout_history').select('id', { count: 'exact' });
+      console.log('[Admin] Fetching fresh data, bypassing cache...');
+      // Use cache-busting header to ensure we don't get stale data
+      const profilesRes = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'aluno') 
+        .setHeader('Cache-Control', 'no-cache')
+        .setHeader('Pragma', 'no-cache')
+        .order('created_at', { ascending: false });
+      
+      const workoutsRes = await supabase.from('workouts').select('id', { count: 'exact' }).setHeader('Cache-Control', 'no-cache');
+      const historyRes = await supabase.from('workout_history').select('id', { count: 'exact' }).setHeader('Cache-Control', 'no-cache');
 
-      if (profilesRes.data) setStudents(profilesRes.data);
+      if (profilesRes.data) {
+        setStudents(profilesRes.data);
+      }
+      
       if (workoutsRes.count !== null) setTotalWorkouts(workoutsRes.count);
       if (historyRes.count !== null) setTotalHistory(historyRes.count);
       else setTotalHistory(0);
@@ -104,7 +118,7 @@ export const AdminPage = () => {
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -406,6 +420,12 @@ export const AdminPage = () => {
         </div>
         
         <div className="flex items-center space-x-4">
+          <Button onClick={() => navigate('/admin/registrations')} variant="secondary" className="bg-lime-400 text-black hover:bg-lime-500 text-xs font-black uppercase italic shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+            <UserPlus size={18} className="mr-2" /> Membros
+          </Button>
+          <Button onClick={() => navigate('/admin/avatars')} variant="secondary" className="bg-blue-500 text-white hover:bg-blue-600 text-xs font-black uppercase italic shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+            <ImageIcon size={18} className="mr-2" /> Biblioteca de Avatares
+          </Button>
           <Button onClick={() => setIsLibraryOpen(true)} variant="secondary" className="bg-white text-black hover:bg-zinc-200 text-xs font-black uppercase italic">
             <BookOpen size={18} className="mr-2" /> Biblioteca de Exercícios
           </Button>
@@ -476,8 +496,21 @@ export const AdminPage = () => {
                         className="flex items-center space-x-4 cursor-pointer flex-1"
                         onClick={() => setSelectedStudent(student)}
                       >
-                         <div className="w-12 h-12 bg-white border-2 border-black flex items-center justify-center font-black text-black italic text-xl group-hover:bg-lime-400 transition-colors shrink-0">
-                            {studentInitials}
+                         <div className="w-12 h-12 bg-white border-2 border-black flex items-center justify-center font-black text-black italic text-xl group-hover:bg-lime-400 transition-colors shrink-0 overflow-hidden">
+                            {((student.avatar_url && !student.avatar_url.includes('mage-low-m.jpg')) || getDynamicAvatar(student)) ? (
+                              <img 
+                                src={student.avatar_url || getDynamicAvatar(student)!} 
+                                alt="" 
+                                className="w-full h-full object-cover" 
+                                referrerPolicy="no-referrer" 
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).onerror = null;
+                                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.full_name || student.email)}&background=000&color=fff&bold=true`;
+                                }}
+                              />
+                            ) : (
+                              student.role?.toLowerCase() === 'professor' ? <GraduationCap size={24} className="text-blue-600" /> : studentInitials
+                            )}
                          </div>
                          <div className="w-full overflow-hidden">
                           <h4 className="text-xl font-black uppercase italic group-hover:text-lime-400 transition-colors truncate max-w-[250px]">{studentDisplayName}</h4>
@@ -603,15 +636,32 @@ export const AdminPage = () => {
                ) : !isBuildingWorkout ? (
                  <>
                   <div className="flex flex-col md:flex-row gap-8 items-start">
-                      <div className="w-24 h-24 bg-zinc-950 border-4 border-black flex items-center justify-center shrink-0">
-                        <span className="text-3xl font-black text-white italic">
-                          {(selectedStudent.nickname || selectedStudent.full_name || selectedStudent.email || '?')
-                            .split(' ')
-                            .map(n => n[0])
-                            .join('')
-                            .toUpperCase()
-                            .substring(0, 2)}
-                        </span>
+                      <div className="w-24 h-24 bg-zinc-950 border-4 border-black flex items-center justify-center shrink-0 overflow-hidden">
+                        {((selectedStudent.avatar_url && !selectedStudent.avatar_url.includes('mage-low-m.jpg')) || getDynamicAvatar(selectedStudent)) ? (
+                          <img 
+                            src={selectedStudent.avatar_url || getDynamicAvatar(selectedStudent)!} 
+                            alt="" 
+                            className="w-full h-full object-cover" 
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).onerror = null;
+                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedStudent.full_name || selectedStudent.email)}&background=000&color=fff&bold=true`;
+                            }}
+                          />
+                        ) : (
+                          selectedStudent.role?.toLowerCase() === 'professor' ? (
+                            <GraduationCap size={48} className="text-blue-600" />
+                          ) : (
+                            <span className="text-3xl font-black text-white italic">
+                              {(selectedStudent.nickname || selectedStudent.full_name || selectedStudent.email || '?')
+                                .split(' ')
+                                .map(n => n[0])
+                                .join('')
+                                .toUpperCase()
+                                .substring(0, 2)}
+                            </span>
+                          )
+                        )}
                       </div>
                       <div className="space-y-4 w-full">
                         <div>

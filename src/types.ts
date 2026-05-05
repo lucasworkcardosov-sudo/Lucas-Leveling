@@ -1,4 +1,4 @@
-export type UserRole = 'aluno' | 'admin';
+export type UserRole = 'aluno' | 'admin' | 'professor' | 'pendente' | 'player';
 
 export interface Profile {
   id: string;
@@ -19,7 +19,22 @@ export interface Profile {
   gender?: string;
   xp: number;
   level: number;
+  hp?: number;
+  mana?: number;
   class?: string;
+  avatar_url?: string;
+  current_avatar_id?: string;
+  instructor_id?: string;
+  created_at: string;
+}
+
+export interface AvatarLibrary {
+  id: string;
+  class: string;
+  gender: 'M' | 'F';
+  min_level: number;
+  image_url: string;
+  avatar_code: string;
   created_at: string;
 }
 

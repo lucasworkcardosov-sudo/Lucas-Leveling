@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Calendar, Trophy, Zap } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Calendar, Trophy, Zap, Dumbbell } from 'lucide-react';
+import { getDynamicAvatar } from '../lib/avatarLibrary';
 import { 
   LineChart, 
   Line, 
@@ -96,8 +97,12 @@ export const ProgressPage = ({ profile }: ProgressPageProps) => {
             <p className="text-[10px] font-black uppercase text-zinc-400 leading-none">Atleta</p>
             <p className="text-xs font-black uppercase text-black truncate max-w-[150px]">{displayName}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-zinc-900 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-            <span className="text-xs font-black text-white italic">{initials}</span>
+          <div className="w-10 h-10 rounded-full bg-zinc-900 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+            {profile.avatar_url || getDynamicAvatar(profile) ? (
+              <img src={profile.avatar_url || getDynamicAvatar(profile)!} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="text-xs font-black text-white italic">{initials}</span>
+            )}
           </div>
         </div>
       </header>

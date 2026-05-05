@@ -13,7 +13,7 @@ export const RegisterPage = () => {
           <Dumbbell className="text-lime-400" size={32} />
         </div>
       </div>
-      <RegistrationForm onComplete={() => navigate('/login')} />
+      <RegistrationForm onComplete={() => navigate('/pending-approval')} />
       <Link to="/login" className="mt-8 text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-black transition-colors underline">
         Já tem uma conta? Voltar ao Login
       </Link>

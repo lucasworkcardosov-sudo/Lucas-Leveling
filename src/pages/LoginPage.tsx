@@ -29,23 +29,48 @@ export const LoginPage = () => {
 
       if (authError) throw authError;
 
-      // Logic for redirection
-      if (email === 'lucas.cadoso@gmail.com') {
-        navigate('/admin');
+      // Try to use metadata from auth user first for role redirection (more stable)
+      const userRole = data.user.user_metadata?.role || 'aluno';
+      const userClass = data.user.user_metadata?.class || 'Guerreiro';
+
+      // Fetch profile to sync latest data, but handle recursion error
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, class')
+        .eq('id', data.user.id)
+        .setHeader('Cache-Control', 'no-cache') // Bypass cache for fresh role
+        .maybeSingle();
+
+      if (profileError || !profile) {
+        if (profileError) console.warn('Profile fetch error during login (checking fallback):', profileError);
+        
+        // If profile is missing or recursion error (42P17) or other RLS issue, fall back to metadata
+        if (!profile || profileError?.code === '42P17' || profileError?.message?.includes('recursion')) {
+          if (userRole === 'admin') {
+            navigate('/admin');
+          } else if (userRole === 'professor') {
+            navigate('/professor/dashboard');
+          } else if (userRole === 'pendente') {
+            navigate('/pending-approval');
+          } else {
+            navigate('/dashboard');
+          }
+          return;
+        }
+
+        // Se der outro erro ao buscar perfil, pode ser um novo registro sem perfil criado ainda
+        navigate('/pending-approval');
         return;
       }
 
-      // Fetch profile to check role
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
+      const activeRole = profile.role || userRole;
 
-      if (profileError) throw profileError;
-
-      if (profile.role === 'admin') {
+      if (activeRole === 'admin') {
         navigate('/admin');
+      } else if (activeRole === 'professor') {
+        navigate('/professor/dashboard');
+      } else if (activeRole === 'pendente') {
+        navigate('/pending-approval');
       } else {
         navigate('/dashboard');
       }

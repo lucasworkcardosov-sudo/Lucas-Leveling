@@ -2,17 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Profile, Workout } from '../types';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
-import { LogOut, Dumbbell, Trophy, ShieldAlert, ShieldCheck, Scroll, Sword, CheckCircle2, Search, TrendingUp, LayoutList, X, Hash, PlayCircle, Clock, Scale, Info, AlertTriangle, RefreshCcw, Calendar, Camera, Image, ArrowUpRight, CheckSquare, Rocket } from 'lucide-react';
+import { LogOut, Dumbbell, Trophy, ShieldAlert, ShieldCheck, Scroll, Sword, CheckCircle2, Search, TrendingUp, LayoutList, X, Hash, PlayCircle, Clock, Scale, Info, AlertTriangle, RefreshCcw, Calendar, Camera, Image, ArrowUpRight, CheckSquare, Rocket, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn, getYoutubeEmbedUrl } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { getDynamicAvatar } from '../lib/avatarLibrary';
 
 interface DashboardProps {
   profile: Profile;
   onRefresh: () => Promise<void>;
 }
 
-export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
+export const Dashboard = ({ profile: initialProfile, onRefresh }: DashboardProps) => {
+  const [effectiveProfile, setEffectiveProfile] = useState<Profile>(initialProfile);
+  const [isPreview, setIsPreview] = useState(false);
+  
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -30,19 +34,43 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
   const [trainingHistory, setTrainingHistory] = useState<string[]>([]);
 
   useEffect(() => {
-    if (profile.id) {
+    const previewId = sessionStorage.getItem('preview_student_id');
+    if (previewId && (initialProfile.role === 'professor' || initialProfile.role === 'admin')) {
+      setIsPreview(true);
+      fetchPreviewProfile(previewId);
+    } else {
+      setIsPreview(false);
+      setEffectiveProfile(initialProfile);
+    }
+  }, [initialProfile]);
+
+  const fetchPreviewProfile = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (data) setEffectiveProfile(data);
+    } catch (error) {
+      console.error('Error fetching preview profile:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (effectiveProfile.id) {
       fetchActiveWorkouts();
       fetchTrainingHistory();
       fetchProgressPhotos();
     }
-  }, [profile.id]);
+  }, [effectiveProfile.id]);
 
   const fetchProgressPhotos = async () => {
     try {
       const { data, error } = await supabase
         .from('progress_logs')
         .select('*')
-        .eq('student_id', profile.id)
+        .eq('student_id', effectiveProfile.id)
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -60,7 +88,7 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
     setIsUploadingPhoto(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${effectiveProfile.id}/${Date.now()}.${fileExt}`;
       const filePath = `progress/${fileName}`;
 
       // 1. Upload to Supabase Storage
@@ -77,7 +105,7 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
 
       // 3. Save to progress_logs table
       const { error: logError } = await supabase.from('progress_logs').insert([{
-        student_id: profile.id,
+        student_id: effectiveProfile.id,
         photo_url: publicUrl,
         type: 'photo_log',
         notes: 'Treino do dia'
@@ -96,8 +124,8 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
   };
 
   const getMotivationalPhrase = () => {
-    const isFemale = profile.gender === 'Feminino';
-    const goal = profile.goal || 'Geral';
+    const isFemale = effectiveProfile.gender === 'Feminino';
+    const goal = effectiveProfile.goal || 'Geral';
     
     if (goal.includes('Hipertrofia')) {
       return isFemale ? "Construindo uma versão mais forte a cada treino!" : "Foco no volume, a evolução não para!";
@@ -117,14 +145,14 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
       const { data, error } = await supabase
         .from('training_sessions')
         .select('completed_at')
-        .eq('user_id', profile.id);
+        .eq('user_id', effectiveProfile.id);
 
       if (error) {
         // Fallback to workout_logs if training_sessions doesn't exist
         const { data: logData } = await supabase
           .from('workout_logs')
           .select('completed_at')
-          .eq('student_id', profile.id);
+          .eq('student_id', effectiveProfile.id);
         
         if (logData) {
           const dates = logData.map(log => new Date(log.completed_at).toISOString().split('T')[0]);
@@ -147,7 +175,7 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
       const { data, error } = await supabase
         .from('workouts')
         .select('*')
-        .eq('student_id', profile.id)
+        .eq('student_id', effectiveProfile.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -165,8 +193,8 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
 
   const handleLogout = () => supabase.auth.signOut();
 
-  const displayName = profile.nickname || profile.full_name || profile.email;
-  const initials = (profile.nickname || profile.full_name || profile.email || '?')
+  const displayName = effectiveProfile.nickname || effectiveProfile.full_name || effectiveProfile.email;
+  const initials = (effectiveProfile.nickname || effectiveProfile.full_name || effectiveProfile.email || '?')
     .split(' ')
     .map(n => n[0])
     .join('')
@@ -189,16 +217,24 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
       if (isFirstOfToday) {
         try {
           const sessionData = {
-            student_id: profile.id,
-            user_id: profile.id,
+            student_id: effectiveProfile.id,
+            user_id: effectiveProfile.id,
             workout_id: selectedWorkout?.id,
             xp_gained: 10, // Small XP for individual exercise
             completed_at: new Date().toISOString(),
             completed_date: new Date().toISOString().split('T')[0]
           };
 
+          // Try to log in all available tables for maximum compatibility
           await supabase.from('training_sessions').insert([sessionData]);
           await supabase.from('workout_logs').insert([sessionData]);
+          
+          try {
+            await supabase.from('workout_history').insert([sessionData]);
+          } catch (e) {
+            console.warn('Erro silenciado ao salvar no histórico primário:', e);
+          }
+          
           fetchTrainingHistory();
         } catch (error) {
           console.error('Error recording first exercise:', error);
@@ -217,45 +253,58 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
     }
     setLoading(true);
     try {
-      // 1. Calculate XP and Level
-      const newXp = (profile.xp || 0) + 100;
+      // 1. Calculate XP Recompensa
+      const xpGained = 120; // Changed to match the alert message they see usually
+      const currentXp = effectiveProfile.xp || 0;
+      const newXp = currentXp + xpGained;
       const newLevel = Math.floor(newXp / 500) + 1;
 
-      // 2. Update Profile
+      // 2. Update Profile (Soma do XP)
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
           xp: newXp, 
           level: newLevel,
         })
-        .eq('id', profile.id);
+        .eq('id', effectiveProfile.id);
 
       if (profileError) throw profileError;
 
-      // 3. Save to workout_logs/training_sessions
+      // 3. Save to workout_history and compatibility tables
       const sessionData = {
-        student_id: profile.id,
-        user_id: profile.id, // For compatibility
+        student_id: effectiveProfile.id, // ID do aluno (Map UID)
+        user_id: effectiveProfile.id, // For compatibility
         workout_id: selectedWorkout.id,
-        xp_gained: 100,
+        xp_gained: xpGained,
         completed_at: new Date().toISOString(),
         completed_date: new Date().toISOString().split('T')[0]
       };
 
-      const { error: logError } = await supabase
-        .from('training_sessions')
-        .insert([sessionData]);
-
-      if (logError) {
-        await supabase
-          .from('workout_logs')
+      // Logging history with error handling (don't block UI if history fails)
+      try {
+        const { error: historyError } = await supabase
+          .from('workout_history')
           .insert([sessionData]);
+        
+        if (historyError) throw historyError;
+      } catch (historyErr) {
+        console.warn('Falha na gravação do histórico:', historyErr);
+        // Exibimos aviso mas não bloqueamos
+        alert('Aviso: Seu progresso foi salvo no perfil, mas houve uma falha ao registrar no mural de glória.');
+      }
+
+      // Legacy support inserts
+      try {
+        await supabase.from('training_sessions').insert([sessionData]);
+        await supabase.from('workout_logs').insert([sessionData]);
+      } catch (e) {
+        // Silently fail for legacy tables
       }
 
       await onRefresh();
       fetchTrainingHistory();
       setCompletedExercises([]);
-      alert('QUEST CONCLUÍDA! +120 EXP ADICIONADOS AO SEU PERFIL!');
+      alert(`QUEST CONCLUÍDA! +${xpGained} EXP ADICIONADOS AO SEU PERFIL!`);
     } catch (error) {
       console.error('Erro ao finalizar treino:', error);
       alert('Erro ao salvar progresso.');
@@ -388,9 +437,26 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
 
   return (
     <div className="min-h-screen bg-zinc-100 font-pixel text-lg">
+      {isPreview && (
+        <div className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest py-2 px-4 flex justify-between items-center border-b-4 border-black">
+          <div className="flex items-center">
+            <Eye size={14} className="mr-2" />
+            <span>Modo Visualização: Você está vendo a interface do aluno <strong>{effectiveProfile.full_name}</strong></span>
+          </div>
+          <button 
+            onClick={() => {
+              sessionStorage.removeItem('preview_student_id');
+              navigate('/professor/dashboard');
+            }}
+            className="bg-black text-white px-3 py-1 border-2 border-white hover:bg-white hover:text-black transition-all"
+          >
+            Sair do Modo de Visão
+          </button>
+        </div>
+      )}
       <header className="border-b-[6px] border-black bg-white sticky top-0 z-50 px-4 py-2 md:py-4 flex justify-between items-center gap-2 md:gap-4 shadow-[0_4px_0_0_rgba(0,0,0,0.1)] w-full">
         <div className="flex items-center space-x-2 shrink-0 min-w-0">
-          <Dumbbell className="text-lime-500 shrink-0" strokeWidth={4} size={24} md:size={28} />
+          <Dumbbell className="text-lime-500 shrink-0" strokeWidth={4} size={24} />
           <h1 className="font-black uppercase tracking-tighter italic font-press leading-none truncate flex items-center">
             <span className="text-[clamp(0.75rem,4vw,1.25rem)]">QUEST</span>
             <span className="text-lime-500 ml-1 text-[clamp(0.75rem,4vw,1.25rem)] hidden xs:inline">WORKOUT</span>
@@ -398,19 +464,32 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
         </div>
         
         <div className="flex items-center gap-1.5 md:gap-4 shrink-0">
-          {profile.role === 'admin' && (
+          {initialProfile.role === 'professor' && (
             <button 
-              onClick={() => navigate('/admin')}
-              className="hidden md:block text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-lime-500 border-4 border-black px-3 py-1 transition-all italic shrink-0 font-press bg-white shadow-[2px_2px_0px_0px_black]"
+              onClick={() => navigate('/professor/dashboard')}
+              className="hidden md:block text-[8px] font-black uppercase tracking-widest text-blue-500 border-4 border-blue-500 bg-blue-500/10 px-3 py-1 transition-all italic shrink-0 font-press shadow-[2px_2px_0px_0px_black] hover:bg-blue-500 hover:text-white"
             >
               MESTRE
+            </button>
+          )}
+
+          {initialProfile.role === 'admin' && (
+            <button 
+              onClick={() => navigate('/admin')}
+              className="hidden md:block text-[8px] font-black uppercase tracking-widest px-3 py-1 transition-all italic shrink-0 font-press shadow-[2px_2px_0px_0px_black] text-amber-500 border-4 border-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-black"
+            >
+              ARQUIMAGO
             </button>
           )}
 
           <div className="flex items-center gap-1.5 md:gap-2">
             <div className="flex items-center gap-1.5 md:gap-2 mr-0.5 md:mr-1 shrink-0">
               <div className="w-8 h-8 md:w-10 md:h-10 bg-zinc-900 border-[3px] border-rpg-gold flex items-center justify-center relative shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0 min-w-[32px]">
-                <span className="text-[10px] md:text-xs font-black text-white font-press">{initials}</span>
+                {effectiveProfile.avatar_url || getDynamicAvatar(effectiveProfile) ? (
+                  <img src={effectiveProfile.avatar_url || getDynamicAvatar(effectiveProfile)!} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="text-[10px] md:text-xs font-black text-white font-press">{initials}</span>
+                )}
               </div>
               <span className="hidden lg:block text-xs font-black uppercase tracking-widest text-zinc-600 truncate max-w-[100px] font-press text-[8px]">
                 {displayName}
@@ -418,9 +497,9 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
             </div>
 
             <div className="flex items-center space-x-1 md:space-x-2 bg-black text-white px-2 md:px-4 py-1 md:py-1.5 border-[3px] border-rpg-gold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0 min-w-[50px] md:min-w-[70px]">
-              <Trophy size={12} className="text-rpg-gold font-bold md:size-14" />
-              <span className="text-[9px] md:text-sm font-black uppercase tracking-wider font-press">L{profile.level}</span>
-              <span className="hidden sm:inline text-[9px] text-zinc-400 font-bold font-press">{profile.xp} XP</span>
+              <Trophy size={14} className="text-rpg-gold font-bold" />
+              <span className="text-[9px] md:text-sm font-black uppercase tracking-wider font-press">L{effectiveProfile.level}</span>
+              <span className="hidden sm:inline text-[9px] text-zinc-400 font-bold font-press">{effectiveProfile.xp} XP</span>
             </div>
 
             <button 
@@ -428,7 +507,7 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
               className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-zinc-400 hover:text-black border-2 border-transparent hover:border-black transition-all hover:bg-zinc-100 shrink-0"
               title="Logout"
             >
-              <LogOut size={18} strokeWidth={3} md:size-20 />
+              <LogOut size={20} strokeWidth={3} />
             </button>
           </div>
         </div>
@@ -441,7 +520,11 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
              <div className="bg-white border-[6px] border-black p-6 shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] pixel-card">
                 <div className="flex items-center gap-4 mb-6">
                    <div className="w-[70px] h-[70px] min-w-[70px] bg-zinc-900 border-[5px] border-rpg-gold flex items-center justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
-                      <span className="text-2xl font-black text-white italic font-press">{initials}</span>
+                      {effectiveProfile.avatar_url || getDynamicAvatar(effectiveProfile) ? (
+                        <img src={effectiveProfile.avatar_url || getDynamicAvatar(effectiveProfile)!} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <span className="text-2xl font-black text-white italic font-press">{initials}</span>
+                      )}
                       <div className="absolute top-0 right-0 w-2 h-2 bg-rpg-gold"></div>
                    </div>
                    <div className="w-full overflow-hidden">
@@ -464,12 +547,12 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
                   <div className="space-y-1">
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest font-press">
                       <span className="text-rpg-life">LIFE (HP)</span>
-                      <span>{selectedWorkout ? dailyProgress : 100}%</span>
+                      <span>{effectiveProfile.hp !== undefined ? effectiveProfile.hp : (selectedWorkout ? dailyProgress : 100)}%</span>
                     </div>
                     <div className="pixel-bar-bg">
                       <div 
                         className="pixel-bar-fill bg-rpg-life" 
-                        style={{ width: `${selectedWorkout ? dailyProgress : 100}%` }}
+                        style={{ width: `${effectiveProfile.hp !== undefined ? effectiveProfile.hp : (selectedWorkout ? dailyProgress : 100)}%` }}
                       />
                     </div>
                   </div>
@@ -478,12 +561,12 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
                   <div className="space-y-1">
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest font-press">
                       <span className="text-rpg-mana">MANA (EXP)</span>
-                      <span>{(profile.xp || 0) % 500 / 5}%</span>
+                      <span>{effectiveProfile.mana !== undefined ? effectiveProfile.mana : ((effectiveProfile.xp || 0) % 500 / 5)}%</span>
                     </div>
                     <div className="pixel-bar-bg">
                       <div 
                         className="pixel-bar-fill bg-rpg-mana" 
-                        style={{ width: `${(profile.xp || 0) % 500 / 5}%` }}
+                        style={{ width: `${effectiveProfile.mana !== undefined ? effectiveProfile.mana : ((effectiveProfile.xp || 0) % 500 / 5)}%` }}
                       />
                     </div>
                   </div>
@@ -513,9 +596,9 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
                   <ShieldAlert size={14} className="mr-2" /> COMANDO DO MESTRE
                 </h3>
                 <p className="text-lg font-bold leading-tight italic font-pixel">
-                  {profile.goal === 'Hipertrofia' 
-                    ? (profile.gender === 'Masculino' ? 'Sinta suas fibras musculares se expandindo como um titã.' : 'Construa a força de uma deusa guerreira.')
-                    : profile.goal === 'Emagrecimento'
+                  {effectiveProfile.goal === 'Hipertrofia' 
+                    ? (effectiveProfile.gender === 'Masculino' ? 'Sinta suas fibras musculares se expandindo como um titã.' : 'Construa a força de uma deusa guerreira.')
+                    : effectiveProfile.goal === 'Emagrecimento'
                     ? 'Queime a fraqueza e revele o herói que existe em você.'
                     : 'A jornada é longa, mas a glória de um herói é eterna.'}
                 </p>
@@ -767,26 +850,26 @@ export const Dashboard = ({ profile, onRefresh }: DashboardProps) => {
                       <div className="flex justify-between items-start mb-6">
                         <div>
                           <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 font-press mb-2">EXPERIÊNCIA TOTAL</h3>
-                          <p className="text-5xl font-black italic font-press">{profile.xp} XP</p>
+                          <p className="text-5xl font-black italic font-press">{effectiveProfile.xp} XP</p>
                         </div>
                         <div className="bg-black text-rpg-gold px-4 py-2 font-black text-2xl italic border-4 border-black font-press">
-                          LVL {profile.level}
+                          LVL {effectiveProfile.level}
                         </div>
                       </div>
                       
                       <div className="space-y-4">
                         <div className="flex justify-between text-[10px] font-black uppercase font-press">
                            <span>PRÓXIMO NÍVEL</span>
-                           <span>{profile.xp % 500} / 500</span>
+                           <span>{effectiveProfile.xp % 500} / 500</span>
                         </div>
                         <div className="pixel-bar-bg h-8">
                           <div 
                             className="pixel-bar-fill bg-rpg-mana h-full"
-                            style={{ width: `${(profile.xp % 500) / 5}%` }}
+                            style={{ width: `${(effectiveProfile.xp % 500) / 5}%` }}
                           />
                         </div>
                         <p className="text-xs font-bold text-zinc-400 uppercase font-pixel tracking-wider italic">
-                           VOCÊ PRECISA DE MAIS {500 - (profile.xp % 500)} XP PARA TRANSCENDER.
+                           VOCÊ PRECISA DE MAIS {500 - (effectiveProfile.xp % 500)} XP PARA TRANSCENDER.
                         </p>
                       </div>
                    </div>

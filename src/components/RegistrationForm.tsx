@@ -57,7 +57,8 @@ export const RegistrationForm = ({ onComplete }: { onComplete: () => void }) => 
         goal: formData.goal,
         available_time: parseInt(formData.available_time) || null,
         training_period: formData.training_period,
-        role: 'aluno',
+        role: 'pendente',
+        class: 'Guerreiro',
         accepted_terms: true,
         terms_accepted_at: new Date().toISOString()
       });
